@@ -691,7 +691,7 @@ Zotero.Item.prototype.inCollection = function(collectionID) {
  */
 Zotero.Item.prototype.setField = function(field, value, loadIn) {
 	if (typeof value == 'string') {
-		value = value.trim();
+		value = value.trim().normalize();
 	}
 	
 	this._disabledCheck();
@@ -804,6 +804,9 @@ Zotero.Item.prototype.setField = function(field, value, loadIn) {
 		value = false;
 	}
 	
+	// Make sure to use type-specific field ID if available
+	fieldID = Zotero.ItemFields.getFieldIDFromTypeAndBase(this.itemTypeID, fieldID) || fieldID;
+	
 	if (value !== false && !Zotero.ItemFields.isValidForType(fieldID, this.itemTypeID)) {
 		var msg = "'" + field + "' is not a valid field for type " + this.itemTypeID;
 		
@@ -819,6 +822,24 @@ Zotero.Item.prototype.setField = function(field, value, loadIn) {
 	// If not a multiline field, strip newlines
 	if (typeof value == 'string' && !Zotero.ItemFields.isMultiline(fieldID)) {
 		value = value.replace(/[\r\n]+/g, " ");;
+	}
+	
+	if (fieldID == Zotero.ItemFields.getID('ISBN')) {
+		// Hyphenate ISBNs, but only if everything is in expected format and valid
+		let isbns = ('' + value).trim().split(/\s*[,;]\s*|\s+/),
+			newISBNs = '',
+			failed = false;
+		for (let i=0; i<isbns.length; i++) {
+			let isbn = Zotero.Utilities.Internal.hyphenateISBN(isbns[i]);
+			if (!isbn) {
+				failed = true;
+				break;
+			}
+			
+			newISBNs += ' ' + isbn;
+		}
+		
+		if (!failed) value = newISBNs.substr(1);
 	}
 	
 	if (!loadIn) {
@@ -877,11 +898,12 @@ Zotero.Item.prototype.getDisplayTitle = function (includeAuthorAndDate) {
 	var itemTypeName = Zotero.ItemTypes.getName(itemTypeID);
 	
 	if (!title && (itemTypeID == 8 || itemTypeID == 10)) { // 'letter' and 'interview' itemTypeIDs
-		var creators = this.getCreators();
-		var authors = [];
-		var participants = [];
+		let creators = this.getCreators();
+		let authors = [];
+		let participants = [];
 		if (creators) {
-			for each(var creator in creators) {
+			for (let i=0; i<creators.length; i++) {
+				let creator = creators[i];
 				if ((itemTypeID == 8 && creator.creatorTypeID == 16) || // 'letter'/'recipient'
 						(itemTypeID == 10 && creator.creatorTypeID == 7)) { // 'interview'/'interviewer'
 					participants.push(creator);
@@ -896,9 +918,9 @@ Zotero.Item.prototype.getDisplayTitle = function (includeAuthorAndDate) {
 		var strParts = [];
 		
 		if (includeAuthorAndDate) {
-			var names = [];
-			for each(author in authors) {
-				names.push(author.ref.lastName);
+			let names = [];
+			for (let i=0; i<authors.length; i++) {
+				names.push(authors[i].ref.lastName);
 			}
 			
 			// TODO: Use same logic as getFirstCreatorSQL() (including "et al.")
@@ -908,9 +930,10 @@ Zotero.Item.prototype.getDisplayTitle = function (includeAuthorAndDate) {
 		}
 		
 		if (participants.length > 0) {
-			var names = [];
-			for each(participant in participants) {
-				names.push(participant.ref.lastName);
+			let names = [];
+			let max = Math.min(4, participants.length);
+			for (let i=0; i<max; i++) {
+				names.push(participants[i].ref.lastName);
 			}
 			switch (names.length) {
 				case 1:
@@ -2834,8 +2857,16 @@ Zotero.Item.prototype.getFile = function(row, skipExistsCheck) {
 			// accidentally use the parent dir. Syncing to OS X, which doesn't
 			// exhibit this bug, will properly correct such filenames in
 			// storage.js and propagate the change
-			if (Zotero.isWin) {
+			//
+			// The one exception on other platforms is '/', which is interpreted
+			// as a directory by setRelativeDescriptor, so strip in that case too.
+			if (Zotero.isWin || path.indexOf('/') != -1) {
 				path = Zotero.File.getValidFileName(path, true);
+			}
+			// Ignore .zotero* files that were relinked before we started blocking them
+			if (path.startsWith(".zotero")) {
+				Zotero.debug("Ignoring attachment file " + path, 2);
+				return false;
 			}
 			var file = Zotero.Attachments.getStorageDirectory(this.id);
 			file.QueryInterface(Components.interfaces.nsILocalFile);
@@ -3083,15 +3114,47 @@ Zotero.Item.prototype.relinkAttachmentFile = function(file, skipItemUpdate) {
 		throw('Cannot relink linked URL in Zotero.Items.relinkAttachmentFile()');
 	}
 	
+	if (file.leafName.endsWith(".lnk")) {
+		throw new Error("Cannot relink to Windows shortcut");
+	}
+	
 	var newName = Zotero.File.getValidFileName(file.leafName);
 	if (!newName) {
 		throw ("No valid characters in filename after filtering in Zotero.Item.relinkAttachmentFile()");
 	}
 	
-	// Rename file to filtered name if necessary
-	if (file.leafName != newName) {
-		Zotero.debug("Renaming file '" + file.leafName + "' to '" + newName + "'");
-		file.moveTo(null, newName);
+	try {
+		// If selected file isn't in the attachment's storage directory,
+		// copy it in and use that one instead
+		var storageDir = Zotero.Attachments.getStorageDirectory(this.id);
+		if (this.isImportedAttachment() && !file.parent.equals(storageDir)) {
+			// If file with same name already exists in the storage directory,
+			// move it out of the way
+			let targetFile = storageDir.clone();
+			targetFile.append(newName);
+			let renamedFile;
+			if (targetFile.exists()) {
+				renamedFile = targetFile.clone();
+				renamedFile.moveTo(null, newName + ".bak");
+			}
+			
+			Zotero.File.copyToUnique(file, targetFile);
+			file = targetFile;
+			
+			// Delete backup file
+			if (renamedFile) {
+				renamedFile.remove(false);
+			}
+		}
+		// Rename file to filtered name if necessary
+		else if (file.leafName != newName) {
+			Zotero.debug("Renaming file '" + file.leafName + "' to '" + newName + "'");
+			file.moveTo(null, newName);
+		}
+	}
+	catch (e) {
+		Zotero.logError(e);
+		return false;
 	}
 	
 	var path = Zotero.Attachments.getPath(file, linkMode);
@@ -3102,7 +3165,7 @@ Zotero.Item.prototype.relinkAttachmentFile = function(file, skipItemUpdate) {
 		skipClientDateModifiedUpdate: skipItemUpdate
 	});
 	
-	return false;
+	return true;
 }
 
 
@@ -3316,7 +3379,8 @@ Zotero.Item.prototype.__defineGetter__('attachmentPath', function () {
 	
 	var sql = "SELECT path FROM itemAttachments WHERE itemID=?";
 	var path = Zotero.DB.valueQuery(sql, this.id);
-	if (!path) {
+	// Ignore .zotero* files that were relinked before we started blocking them
+	if (!path || path.startsWith('.zotero')) {
 		path = '';
 	}
 	this._attachmentPath = path;
@@ -4892,6 +4956,193 @@ Zotero.Item.prototype.serialize = function(mode) {
 	return arr;
 }
 
+/**
+ * Serializes Zotero Item into Zotero web server API JSON format
+ * 
+ * @param {Object} options
+ *   mode {String}: [new|full|patch] "new" is default. "full" mode includes all
+ *     fields even if empty. "patch" returns only fields that are different from
+ *     those in patchBase
+ *   patchBase {Object}: Item in API JSON format to be compared to in
+ *     "patch" mode. Required if "patch" mode is specified
+ */
+Zotero.Item.prototype.toJSON = function(options) {
+	if (this.id || this.key) {
+		if (!this._primaryDataLoaded) {
+			this.loadPrimaryData(true);
+		}
+		
+		if (this.id) {
+			if (!this._itemDataLoaded) this._loadItemData();
+			if (this.isRegularItem() && !this._creatorsLoaded) this._loadCreators();
+			if (!this._relatedItemsLoaded) this._loadRelatedItems();
+		}
+	}
+	
+	if (this.hasChanged()) {
+		throw new Error("Cannot generate JSON from changed item");
+	}
+	
+	options = options || {};
+	let mode = options.mode || 'new';
+	let patchBase = options.patchBase;
+	
+	if (mode == 'patch') {
+		if (!patchBase) {
+			throw new Error('Cannot use "patch" mode if patchBase not provided');
+		}
+	}
+	else if (patchBase) {
+		Zotero.debug('Zotero.Item.toJSON: ignoring provided patchBase in "' + mode + '" mode', 2);
+	}
+	
+	let obj = {
+		key: this.key || false,
+		version: 0,
+		itemType: Zotero.ItemTypes.getName(this.itemTypeID),
+		tags: [],
+		collections: [],
+		relations: {}
+	};
+	
+	// Type-specific fields
+	for (let i in this._itemData) {
+		let val = '' + this.getField(i);
+		if (val !== '' || mode == 'full') {
+			let name = Zotero.ItemFields.getName(i);
+			if (name == 'version') {
+				// Changed in API v3 to avoid clash with 'version' above
+				// Remove this after https://github.com/zotero/zotero/issues/670
+				name = 'versionNumber';
+			}
+			
+			obj[name] = val;
+		}
+	}
+	
+	if (this.isRegularItem()) {
+		// Creators
+		obj.creators = [];
+		let creators = this.getCreators();
+		for (let i=0; i<creators.length; i++) {
+			let creator = creators[i].ref;
+			let creatorObj = {
+				creatorType: Zotero.CreatorTypes.getName(creators[i].creatorTypeID)
+			};
+			
+			if (creator.fieldMode == 1) {
+				creatorObj.name = creator.lastName;
+			} else {
+				creatorObj.lastName = creator.lastName;
+				creatorObj.firstName = creator.firstName;
+			}
+			
+			obj.creators.push(creatorObj);
+		}
+	}
+	else {
+		// Notes or Attachments
+		let parent = this.getSourceKey();
+		if (parent || mode == 'full') {
+			obj.parentItem = parent ? parent : false;
+		}
+		
+		// Notes and embedded attachment notes
+		let note = this.getNote();
+		if (note !== "" || mode == 'full' || (mode == 'new' && this.isNote())) {
+			obj.note = note;
+		}
+	}
+	
+	// Attachment fields
+	if (this.isAttachment()) {
+		obj.linkMode = ['imported_file','imported_url','linked_file','linked_url'][this.attachmentLinkMode];
+		obj.contentType = this.attachmentMIMEType;
+		obj.charset = this.attachmentCharset;
+		obj.path = this.attachmentPath;
+	}
+	
+	// Tags
+	let tags = this.getTags();
+	for (let i=0; i<tags.length; i++) {
+		let tag = {
+			tag: tags[i].name
+		};
+		if (tags[i].type) tag.type = tags[i].type
+		
+		obj.tags.push(tag);
+	}
+	
+	// Collections
+	if (this.id) {
+		let collections = this.getCollections();
+		for (let i=0; i<collections.length; i++) {
+			let collection = Zotero.Collections.get(collections[i]);
+			obj.collections.push(collection.key);
+		}
+	}
+	
+	// Relations
+	if (this.key) {
+		// Relations other than through the "Related" tab
+		let itemURI = Zotero.URI.getItemURI(this),
+			rels = Zotero.Relations.getByURIs(itemURI);
+		for (let i=0; i<rels.length; i++) {
+			let rel = rels[i].load();
+			obj.relations[rel.predicate] = rel.object;
+		}
+		
+		// Related items (in both directions)
+		let relatedItems = this._getRelatedItemsBidirectional();
+		let pred = 'dc:relation';
+		for (let i=0; i<relatedItems.length; i++) {
+			let item = Zotero.Items.get(relatedItems[i]);
+			let uri = Zotero.URI.getItemURI(item);
+			if (obj.relations[pred]) {
+				if (typeof obj.relations[pred] == 'string') {
+					obj.relations[pred] = [obj.relations[pred]];
+				}
+				obj.relations[pred].push(uri)
+			}
+			else {
+				obj.relations[pred] = uri;
+			}
+		}
+	}
+	
+	// Deleted
+	let deleted = this.deleted;
+	if (deleted || mode == 'full') {
+		obj.deleted = deleted;
+	}
+	
+	obj.dateAdded = Zotero.Date.sqlToISO8601(this.dateAdded);
+	obj.dateModified = Zotero.Date.sqlToISO8601(this.dateModified);
+	if (obj.accessDate) obj.accessDate = Zotero.Date.sqlToISO8601(obj.accessDate);
+	
+	if (mode == 'patch') {
+		// For "patch" mode, remove fields that have the same values
+		for (let i in patchBase) {
+			switch (i) {
+				case 'itemKey':
+				case 'itemVersion':
+				case 'dateModified':
+					continue;
+			}
+			
+			if (i in obj) {
+				if (obj[i] === patchBase[i]) {
+					delete obj[i];
+				}
+			}
+			else {
+				obj[i] = "";
+			}
+		}
+	}
+	
+	return obj;
+};
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -5072,7 +5323,7 @@ Zotero.Item.prototype._getRelatedItemsBidirectional = function () {
 			}
 		}
 	}
-	else if (!related) {
+	else if (!related.length) {
 		return [];
 	}
 	return related;

@@ -6,9 +6,11 @@
 <!ENTITY zotero.general.delete "Ștergere">
 <!ENTITY zotero.general.ok "OK">
 <!ENTITY zotero.general.cancel "Anulare">
+<!ENTITY zotero.general.refresh "Reîmprospătare">
+<!ENTITY zotero.general.saveAs "Salvare ca...">
 
 <!ENTITY zotero.errorReport.title "Raportul de erori Zotero">
-<!ENTITY zotero.errorReport.unrelatedMessages "Jurnalul de erori poate include mesaje fără legătură cu Zotero.">
+<!ENTITY zotero.errorReport.unrelatedMessages "Aceasta ar putea include mesaje fără legătură cu Zotero.">
 <!ENTITY zotero.errorReport.submissionInProgress "Așteaptă, te rog, ca raportul de eroare să fie trimis.">
 <!ENTITY zotero.errorReport.submitted "Raportul de eroare a fost trimis.">
 <!ENTITY zotero.errorReport.reportID "ID raport:">
@@ -45,7 +47,7 @@
 <!ENTITY zotero.collections.showUnfiledItems "Arată înregistrările neîndosariate">
 
 <!ENTITY zotero.items.itemType "Tip înregistrare">
-<!ENTITY zotero.items.type_column "Item Type">
+<!ENTITY zotero.items.type_column "Tip de înregistrare">
 <!ENTITY zotero.items.title_column "Titlu">
 <!ENTITY zotero.items.creator_column "Creator">
 <!ENTITY zotero.items.date_column "Dată">
@@ -123,7 +125,9 @@
 <!ENTITY zotero.item.textTransform "Transformă text">
 <!ENTITY zotero.item.textTransform.titlecase "Litere de Titlu">
 <!ENTITY zotero.item.textTransform.sentencecase "Majusculă ca la propoziție">
-<!ENTITY zotero.item.creatorTransform.nameSwap "Schimbă prenume/nume">
+<!ENTITY zotero.item.creatorTransform.nameSwap "Schimbă Prenume/Nume">
+<!ENTITY zotero.item.viewOnline "Vezi online">
+<!ENTITY zotero.item.copyAsURL "Copiază ca URL">
 
 <!ENTITY zotero.toolbar.newNote "Notă nouă">
 <!ENTITY zotero.toolbar.note.standalone "Notă independentă nouă">
@@ -161,6 +165,7 @@
 
 <!ENTITY zotero.bibliography.title "Creează citare/bibliografie">
 <!ENTITY zotero.bibliography.style.label "Stil de citare:">
+<!ENTITY zotero.bibliography.locale.label "Limbă:">
 <!ENTITY zotero.bibliography.outputMode "Mod de ieșire:">
 <!ENTITY zotero.bibliography.bibliography "Bibliografie">
 <!ENTITY zotero.bibliography.outputMethod "Metodă de ieșire:">
@@ -185,9 +190,6 @@
 
 <!ENTITY zotero.citation.keepSorted.label "Păstrează sursele sortate">
 
-<!ENTITY zotero.citation.page "Pagină">
-<!ENTITY zotero.citation.paragraph "Paragraf">
-<!ENTITY zotero.citation.line "Linie">
 <!ENTITY zotero.citation.suppressAuthor.label "Suprimă autor">
 <!ENTITY zotero.citation.prefix.label "Prefix:">
 <!ENTITY zotero.citation.suffix.label "Sufix:">
@@ -284,3 +286,7 @@
 <!ENTITY zotero.downloadManager.label "Salvează în Zotero">
 <!ENTITY zotero.downloadManager.saveToLibrary.description "Anexele nu pot fi salvate în biblioteca selectată. Această înregistrare va fi salvată în schimb în biblioteca ta.">
 <!ENTITY zotero.downloadManager.noPDFTools.description "Pentru a folosi această facilitate, trebuie să instalezi mai întâi uneletele PDF în preferințele Zotero.">
+
+<!ENTITY zotero.attachLink.title "Anexează link la URI">
+<!ENTITY zotero.attachLink.label.link "Link:">
+<!ENTITY zotero.attachLink.label.title "Titlu:">

@@ -12,8 +12,6 @@
 <!ENTITY zotero.preferences.showIn.browserPane "浏览器边栏">
 <!ENTITY zotero.preferences.showIn.separateTab "独立标签页">
 <!ENTITY zotero.preferences.showIn.appTab "App 标签页">
-<!ENTITY zotero.preferences.statusBarIcon "状态栏图标:">
-<!ENTITY zotero.preferences.statusBarIcon.none "无">
 <!ENTITY zotero.preferences.fontSize "字体大小:">
 <!ENTITY zotero.preferences.fontSize.small "小">
 <!ENTITY zotero.preferences.fontSize.medium "中">
@@ -109,6 +107,7 @@
 <!ENTITY zotero.preferences.quickCopy.siteEditor.domainPath "域/路径">
 <!ENTITY zotero.preferences.quickCopy.siteEditor.domainPath.example "(例如 wikipedia.org)">
 <!ENTITY zotero.preferences.quickCopy.siteEditor.outputFormat "输出格式">
+<!ENTITY zotero.preferences.quickCopy.siteEditor.locale "语言">
 <!ENTITY zotero.preferences.quickCopy.dragLimit "禁用便捷复制, 当拖动项超过">
 
 <!ENTITY zotero.preferences.prefpane.cite "引用">
@@ -124,8 +123,6 @@
 <!ENTITY zotero.preferences.cite.styles.styleManager.updated "最后更新">
 <!ENTITY zotero.preferences.cite.styles.styleManager.csl "CSL">
 <!ENTITY zotero.preferences.export.getAdditionalStyles "获取其它样式...">
-
-<!ENTITY zotero.preferences.prefpane.keys "快捷键">
 
 <!ENTITY zotero.preferences.keys.openZotero "开/关 Zotero 面板">
 <!ENTITY zotero.preferences.keys.saveToZotero "保存到Zotero (地址栏图标)">
@@ -148,6 +145,7 @@
 <!ENTITY zotero.preferences.proxies.desc_after_link " 获取更多的信息.">
 <!ENTITY zotero.preferences.proxies.transparent "启用代理转接">
 <!ENTITY zotero.preferences.proxies.autoRecognize "自动识别代理的资源">
+<!ENTITY zotero.preferences.proxies.showRedirectNotification "当通过代理重定向时显示通知">
 <!ENTITY zotero.preferences.proxies.disableByDomain "禁用代理转接, 当域名包含">
 <!ENTITY zotero.preferences.proxies.configured "已设置的代理">
 <!ENTITY zotero.preferences.proxies.hostname "域名">
@@ -164,6 +162,7 @@
 
 <!ENTITY zotero.preferences.prefpane.advanced "高级">
 <!ENTITY zotero.preferences.advanced.filesAndFolders "文件和文件夹">
+<!ENTITY zotero.preferences.advanced.keys "快捷键">
 
 <!ENTITY zotero.preferences.prefpane.locate "定位">
 <!ENTITY zotero.preferences.locate.locateEngineManager "文章检索引擎管理器">
@@ -204,6 +203,6 @@
 <!ENTITY zotero.preferences.debugOutputLogging.submitToServer "提交到 Zotero 服务器">
 
 <!ENTITY zotero.preferences.openAboutConfig "打开配置编辑器">
-<!ENTITY zotero.preferences.openCSLEdit "打开 CSL 编辑器">
-<!ENTITY zotero.preferences.openCSLPreview "打开 CSL 预览">
+<!ENTITY zotero.preferences.openCSLEdit "打开样式编辑器">
+<!ENTITY zotero.preferences.openCSLPreview "打开样式预览">
 <!ENTITY zotero.preferences.openAboutMemory "打开内存管理器">

@@ -12,8 +12,6 @@
 <!ENTITY zotero.preferences.showIn.browserPane "Naršyklės skydelyje">
 <!ENTITY zotero.preferences.showIn.separateTab "Atskiroje kortelėje">
 <!ENTITY zotero.preferences.showIn.appTab "Programos kortelėje">
-<!ENTITY zotero.preferences.statusBarIcon "Ženkliukas būsenos juostoje:">
-<!ENTITY zotero.preferences.statusBarIcon.none "Jokio">
 <!ENTITY zotero.preferences.fontSize "Šrifto dydis:">
 <!ENTITY zotero.preferences.fontSize.small "Mažas">
 <!ENTITY zotero.preferences.fontSize.medium "Vidutinis">
@@ -109,6 +107,7 @@
 <!ENTITY zotero.preferences.quickCopy.siteEditor.domainPath "Sritis/kelias">
 <!ENTITY zotero.preferences.quickCopy.siteEditor.domainPath.example "(pvz., vikipedija.lt)">
 <!ENTITY zotero.preferences.quickCopy.siteEditor.outputFormat "Išvedimo formatas">
+<!ENTITY zotero.preferences.quickCopy.siteEditor.locale "Kalba">
 <!ENTITY zotero.preferences.quickCopy.dragLimit "Neleisti greitai kopijuoti, jei tempiama daugiau kaip">
 
 <!ENTITY zotero.preferences.prefpane.cite "Citavimas">
@@ -124,8 +123,6 @@
 <!ENTITY zotero.preferences.cite.styles.styleManager.updated "Atnaujinta">
 <!ENTITY zotero.preferences.cite.styles.styleManager.csl "CSL">
 <!ENTITY zotero.preferences.export.getAdditionalStyles "Parsisiųsti papildomų stilių...">
-
-<!ENTITY zotero.preferences.prefpane.keys "Spartieji klavišai">
 
 <!ENTITY zotero.preferences.keys.openZotero "Atverti/užverti Zotero skydelį">
 <!ENTITY zotero.preferences.keys.saveToZotero "Įrašyti į Zotero (ženkliukas adreso juostoje)">
@@ -148,6 +145,7 @@
 <!ENTITY zotero.preferences.proxies.desc_after_link ".">
 <!ENTITY zotero.preferences.proxies.transparent "Įgalinti įgaliotojo serverio nukreipimą">
 <!ENTITY zotero.preferences.proxies.autoRecognize "Automatiškai aptikti įgaliotųjų serverių šaltinius">
+<!ENTITY zotero.preferences.proxies.showRedirectNotification "Rodyti perspėjimą kai nukreipiama per proxy serverį">
 <!ENTITY zotero.preferences.proxies.disableByDomain "Uždrauti įgaliotojo serverio nukreipimą, jei mano srities pavadinime yra">
 <!ENTITY zotero.preferences.proxies.configured "Sukonfigūruoti įgaliotieji serveriai">
 <!ENTITY zotero.preferences.proxies.hostname "Serveris">
@@ -164,6 +162,7 @@
 
 <!ENTITY zotero.preferences.prefpane.advanced "Sudėtingiau">
 <!ENTITY zotero.preferences.advanced.filesAndFolders "Failai ir katalogai">
+<!ENTITY zotero.preferences.advanced.keys "Spartieji klavišai">
 
 <!ENTITY zotero.preferences.prefpane.locate "Rasti vietą">
 <!ENTITY zotero.preferences.locate.locateEngineManager "Straipsnių paieškos variklių tvarkytuvė">
@@ -204,6 +203,6 @@
 <!ENTITY zotero.preferences.debugOutputLogging.submitToServer "Išsiųsti į Zotero serverį">
 
 <!ENTITY zotero.preferences.openAboutConfig "Atverti about:config">
-<!ENTITY zotero.preferences.openCSLEdit "Atverti CSL rengyklę">
-<!ENTITY zotero.preferences.openCSLPreview "Atverti CSL žiūryklę">
+<!ENTITY zotero.preferences.openCSLEdit "Atverti stilių rengyklę">
+<!ENTITY zotero.preferences.openCSLPreview "Stilių peržiūra">
 <!ENTITY zotero.preferences.openAboutMemory "Atverti about:memory">

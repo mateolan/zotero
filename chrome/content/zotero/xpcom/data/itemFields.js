@@ -130,7 +130,8 @@ Zotero.ItemFields = new function() {
 	
 	
 	function isValidForType(fieldID, itemTypeID) {
-		_fieldCheck(fieldID, 'isValidForType');
+		fieldID = getID(fieldID);
+		if (!fieldID) return false;
 		
 		if (!_fields[fieldID]['itemTypes']) {
 			return false;
@@ -344,7 +345,8 @@ Zotero.ItemFields = new function() {
 	this.isLong = function (field) {
 		field = this.getName(field);
 		var fields = [
-			'title'
+			'title',
+			'bookTitle'
 		];
 		return fields.indexOf(field) != -1;
 	}

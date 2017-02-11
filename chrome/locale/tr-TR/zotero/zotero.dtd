@@ -6,9 +6,11 @@
 <!ENTITY zotero.general.delete "Sil">
 <!ENTITY zotero.general.ok "Tamam">
 <!ENTITY zotero.general.cancel "İptal Et">
+<!ENTITY zotero.general.refresh "Yenile">
+<!ENTITY zotero.general.saveAs "Farklı Kaydet...">
 
 <!ENTITY zotero.errorReport.title "Zotero Hata Raporu">
-<!ENTITY zotero.errorReport.unrelatedMessages "Hata kaydı Zotero ile ilgili olmayan iletileri de içerebilir.">
+<!ENTITY zotero.errorReport.unrelatedMessages "Bu, Zotero ile ilgili olmayan mesajlar içerebilir.">
 <!ENTITY zotero.errorReport.submissionInProgress "Lütfen hata raporu gönderilene kadar bekleyiniz.">
 <!ENTITY zotero.errorReport.submitted "Hata raporu gönderilmiştir.">
 <!ENTITY zotero.errorReport.reportID "Rapor Kimlik Numarası:">
@@ -45,7 +47,7 @@
 <!ENTITY zotero.collections.showUnfiledItems "Dosyalanmamış Eserleri Göster">
 
 <!ENTITY zotero.items.itemType "Eser Türü">
-<!ENTITY zotero.items.type_column "Item Type">
+<!ENTITY zotero.items.type_column "Eser Türü">
 <!ENTITY zotero.items.title_column "Başlık">
 <!ENTITY zotero.items.creator_column "Yaratan">
 <!ENTITY zotero.items.date_column "Tarih">
@@ -90,8 +92,8 @@
 <!ENTITY zotero.items.menu.duplicateItem "Seçili Eseri Çoğalt">
 <!ENTITY zotero.items.menu.mergeItems "Eserleri Birleştir...">
 
-<!ENTITY zotero.duplicatesMerge.versionSelect "Eserin hangi sürümünün asıl eser olarak kullanılacağını seç:">
-<!ENTITY zotero.duplicatesMerge.fieldSelect "Eserin diğer sürümlerinden hangi alanların tutulacağını seç:">
+<!ENTITY zotero.duplicatesMerge.versionSelect "Eserin hangi versiyonunun asıl eser olarak kullanılacağını seç:">
+<!ENTITY zotero.duplicatesMerge.fieldSelect "Eserin diğer versiyonlarından hangi alanların tutulacağını seç:">
 
 <!ENTITY zotero.toolbar.newItem.label "Yeni Eser">
 <!ENTITY zotero.toolbar.moreItemTypes.label "Başka türler">
@@ -102,7 +104,7 @@
 <!ENTITY zotero.toolbar.newGroup "Yeni Grup...">
 <!ENTITY zotero.toolbar.newSubcollection.label "Yeni Alt Derme...">
 <!ENTITY zotero.toolbar.newSavedSearch.label "Yeni Kaydedilen Arama...">
-<!ENTITY zotero.toolbar.emptyTrash.label "Çöpü Boşalt">
+<!ENTITY zotero.toolbar.emptyTrash.label "Çöp Sepetini Boşalt">
 <!ENTITY zotero.toolbar.tagSelector.label "Etiket Seçiciyi Göster/Gizle">
 <!ENTITY zotero.toolbar.actions.label "Eylemler">
 <!ENTITY zotero.toolbar.import.label "İçeri Aktar...">
@@ -123,7 +125,9 @@
 <!ENTITY zotero.item.textTransform "Metni Dönüştür">
 <!ENTITY zotero.item.textTransform.titlecase "Başlık Biçimi">
 <!ENTITY zotero.item.textTransform.sentencecase "Cümle Biçimi">
-<!ENTITY zotero.item.creatorTransform.nameSwap "İlk ve soy adlarını takas et">
+<!ENTITY zotero.item.creatorTransform.nameSwap "İlk ve Soyadları Takas Et">
+<!ENTITY zotero.item.viewOnline "Çevrimiçi Göster">
+<!ENTITY zotero.item.copyAsURL "URL'i Kopyala">
 
 <!ENTITY zotero.toolbar.newNote "Yeni Not">
 <!ENTITY zotero.toolbar.note.standalone "Yeni Bağımsız Not">
@@ -161,6 +165,7 @@
 
 <!ENTITY zotero.bibliography.title "Bibliyografya Oluştur">
 <!ENTITY zotero.bibliography.style.label "Gönderme Stili:">
+<!ENTITY zotero.bibliography.locale.label "Dil:">
 <!ENTITY zotero.bibliography.outputMode "Çıktı Biçimi">
 <!ENTITY zotero.bibliography.bibliography "Bibliyografya">
 <!ENTITY zotero.bibliography.outputMethod "Çıktı Metodu:">
@@ -185,9 +190,6 @@
 
 <!ENTITY zotero.citation.keepSorted.label "Kaynakları Sıralı Tut">
 
-<!ENTITY zotero.citation.page "Sayfa">
-<!ENTITY zotero.citation.paragraph "Paragraf">
-<!ENTITY zotero.citation.line "Satır">
 <!ENTITY zotero.citation.suppressAuthor.label "Yazarı Sakla">
 <!ENTITY zotero.citation.prefix.label "Önek:">
 <!ENTITY zotero.citation.suffix.label "Sonek:">
@@ -284,3 +286,7 @@
 <!ENTITY zotero.downloadManager.label "Zotero'ya Kaydet">
 <!ENTITY zotero.downloadManager.saveToLibrary.description "Ekler şu an seçili olan kitaplığa kaydedilemedi. Bu eser kitaplığınıza kaydedilecek.">
 <!ENTITY zotero.downloadManager.noPDFTools.description "Bu özelliği kullanabilmek için, önce Zotero tercihlerindeki Arama bölmesinde PDF araçlarını kurmanız gerekmektedir.">
+
+<!ENTITY zotero.attachLink.title "URI'ye Bağlantı Ekle.">
+<!ENTITY zotero.attachLink.label.link "Bağlantı">
+<!ENTITY zotero.attachLink.label.title "Başlık">

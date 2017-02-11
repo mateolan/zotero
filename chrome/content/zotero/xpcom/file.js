@@ -311,13 +311,122 @@ Zotero.File = new function(){
 	}
 	
 	
+	this.createShortened = function (file, type, mode, maxBytes) {
+		if (!maxBytes) {
+			maxBytes = 255;
+		}
+		
+		// Limit should be 255, but leave room for unique numbering if necessary
+		var padding = 3;
+		
+		while (true) {
+			var newLength = maxBytes - padding;
+			
+			try {
+				file.create(type, mode);
+			}
+			catch (e) {
+				let pathError = false;
+				
+				let pathByteLength = Zotero.Utilities.Internal.byteLength(file.path);
+				let fileNameByteLength = Zotero.Utilities.Internal.byteLength(file.leafName);
+				
+				// Windows API only allows paths of 260 characters
+				//
+				// I think this should be >260 but we had a report of an error with exactly
+				// 260 chars: https://forums.zotero.org/discussion/41410
+				if (e.name == "NS_ERROR_FILE_NOT_FOUND" && pathByteLength >= 260) {
+					Zotero.debug("Path is " + file.path);
+					pathError = true;
+				}
+				// ext3/ext4/HFS+ have a filename length limit of ~254 bytes
+				else if ((e.name == "NS_ERROR_FAILURE" || e.name == "NS_ERROR_FILE_NAME_TOO_LONG")
+						&& (fileNameByteLength >= 254 || (Zotero.isLinux && fileNameByteLength > 143))) {
+					Zotero.debug("Filename is '" + file.leafName + "'");
+				}
+				else {
+					Zotero.debug("Path is " + file.path);
+					throw e;
+				}
+				
+				// Preserve extension
+				var matches = file.leafName.match(/.+(\.[a-z0-9]{0,20})$/i);
+				var ext = matches ? matches[1] : "";
+				
+				if (pathError) {
+					let pathLength = pathByteLength - fileNameByteLength;
+					newLength -= pathLength;
+					
+					// Make sure there's a least 1 character of the basename left over
+					if (newLength - ext.length < 1) {
+						throw new Error("Path is too long");
+					}
+				}
+				
+				// Shorten the filename
+				//
+				// Shortened file could already exist if there was another file with a
+				// similar name that was also longer than the limit, so we do this in a
+				// loop, adding numbers if necessary
+				var uniqueFile = file.clone();
+				var step = 0;
+				while (step < 100) {
+					let newBaseName = uniqueFile.leafName.substr(0, newLength - ext.length);
+					if (step == 0) {
+						var newName = newBaseName + ext;
+					}
+					else {
+						var newName = newBaseName + "-" + step + ext;
+					}
+					
+					// Check actual byte length, and shorten more if necessary
+					if (Zotero.Utilities.Internal.byteLength(newName) > maxBytes) {
+						step = 0;
+						newLength--;
+						continue;
+					}
+					
+					uniqueFile.leafName = newName;
+					if (!uniqueFile.exists()) {
+						break;
+					}
+					
+					step++;
+				}
+				
+				var msg = "Shortening filename to '" + newName + "'";
+				Zotero.debug(msg, 2);
+				Zotero.log(msg, 'warning');
+				
+				try {
+					uniqueFile.create(Components.interfaces.nsIFile.type, mode);
+				}
+				catch (e) {
+					// On Linux, try 143, which is the max filename length with eCryptfs
+					if (e.name == "NS_ERROR_FILE_NAME_TOO_LONG" && Zotero.isLinux && uniqueFile.leafName.length > 143) {
+						Zotero.debug("Trying shorter filename in case of filesystem encryption", 2);
+						maxBytes = 143;
+						continue;
+					}
+					else {
+						throw e;
+					}
+				}
+				
+				file.leafName = uniqueFile.leafName;
+			}
+			break;
+		}
+	}
+	
+	
 	this.copyToUnique = function (file, newFile) {
 		newFile.createUnique(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 0644);
 		var newName = newFile.leafName;
 		newFile.remove(null);
 		
 		// Copy file to unique name
-		file.copyTo(newFile.parent, newName);
+		file.copyToFollowingLinks(newFile.parent, newName);
 		return newFile;
 	}
 	
@@ -333,7 +442,7 @@ Zotero.File = new function(){
 		while (otherFiles.hasMoreElements()) {
 			var file = otherFiles.getNext();
 			file.QueryInterface(Components.interfaces.nsIFile);
-			file.copyTo(newDir, null);
+			file.copyToFollowingLinks(newDir, null);
 		}
 	}
 	
@@ -396,6 +505,8 @@ Zotero.File = new function(){
 			// Strip characters not valid in XML, since they won't sync and they're probably unwanted
 			fileName = fileName.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\ud800-\udfff\ufffe\uffff]/g, '');
 		}
+		// Don't allow hidden files
+		fileName = fileName.replace(/^\./, '');
 		// Don't allow blank or illegal filenames
 		if (!fileName || fileName == '.' || fileName == '..') {
 			fileName = '_';
@@ -546,10 +657,13 @@ Zotero.File = new function(){
 				var opWord = Zotero.getString('file.accessError.updated');
 		}
 		
+		Zotero.debug(file.path);
+		Zotero.debug(e, 1);
+		Components.utils.reportError(e);
+		
 		if (e.name == 'NS_ERROR_FILE_ACCESS_DENIED' || e.name == 'NS_ERROR_FILE_IS_LOCKED'
 				// These show up on some Windows systems
 				|| e.name == 'NS_ERROR_FAILURE' || e.name == 'NS_ERROR_FILE_NOT_FOUND') {
-			Zotero.debug(e);
 			str = str + " " + Zotero.getString('file.accessError.cannotBe') + " " + opWord + ".";
 			var checkFileWindows = Zotero.getString('file.accessError.message.windows');
 			var checkFileOther = Zotero.getString('file.accessError.message.other');

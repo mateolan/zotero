@@ -6,9 +6,11 @@
 <!ENTITY zotero.general.delete "Skrap">
 <!ENTITY zotero.general.ok "OK">
 <!ENTITY zotero.general.cancel "Cancel">
+<!ENTITY zotero.general.refresh "Refresh">
+<!ENTITY zotero.general.saveAs "Save As…">
 
 <!ENTITY zotero.errorReport.title "Zotero Error Report">
-<!ENTITY zotero.errorReport.unrelatedMessages "The error log may include messages unrelated to Zotero.">
+<!ENTITY zotero.errorReport.unrelatedMessages "This may include messages unrelated to Zotero.">
 <!ENTITY zotero.errorReport.submissionInProgress "Wag asseblief terwyl die foutboodskap voorgelê word">
 <!ENTITY zotero.errorReport.submitted "Die foutboodskap is voorgelê">
 <!ENTITY zotero.errorReport.reportID "Verslag-ID:">
@@ -123,7 +125,9 @@
 <!ENTITY zotero.item.textTransform "Transform Text">
 <!ENTITY zotero.item.textTransform.titlecase "Title Case">
 <!ENTITY zotero.item.textTransform.sentencecase "Sentence case">
-<!ENTITY zotero.item.creatorTransform.nameSwap "Swap first/last names">
+<!ENTITY zotero.item.creatorTransform.nameSwap "Swap First/Last Names">
+<!ENTITY zotero.item.viewOnline "View Online">
+<!ENTITY zotero.item.copyAsURL "Copy as URL">
 
 <!ENTITY zotero.toolbar.newNote "New Note">
 <!ENTITY zotero.toolbar.note.standalone "New Standalone Note">
@@ -161,6 +165,7 @@
 
 <!ENTITY zotero.bibliography.title "Create Citation/Bibliography">
 <!ENTITY zotero.bibliography.style.label "Citation Style:">
+<!ENTITY zotero.bibliography.locale.label "Language:">
 <!ENTITY zotero.bibliography.outputMode "Output Mode:">
 <!ENTITY zotero.bibliography.bibliography "Bibliography">
 <!ENTITY zotero.bibliography.outputMethod "Output Method:">
@@ -185,9 +190,6 @@
 
 <!ENTITY zotero.citation.keepSorted.label "Hou bronne gesorteer">
 
-<!ENTITY zotero.citation.page "Bladsy">
-<!ENTITY zotero.citation.paragraph "Paragraaf">
-<!ENTITY zotero.citation.line "Lyn">
 <!ENTITY zotero.citation.suppressAuthor.label "Onderdruk outeur">
 <!ENTITY zotero.citation.prefix.label "Voorvoegsel:">
 <!ENTITY zotero.citation.suffix.label "Agtervoegsel:">
@@ -284,3 +286,7 @@
 <!ENTITY zotero.downloadManager.label "Save to Zotero">
 <!ENTITY zotero.downloadManager.saveToLibrary.description "Attachments cannot be saved to the currently selected library. This item will be saved to your library instead.">
 <!ENTITY zotero.downloadManager.noPDFTools.description "To use this feature, you must first install the PDF tools in the Search pane of the Zotero preferences.">
+
+<!ENTITY zotero.attachLink.title "Attach Link to URI">
+<!ENTITY zotero.attachLink.label.link "Link:">
+<!ENTITY zotero.attachLink.label.title "Title:">

@@ -12,8 +12,6 @@
 <!ENTITY zotero.preferences.showIn.browserPane "Browser pane">
 <!ENTITY zotero.preferences.showIn.separateTab "Separate tab">
 <!ENTITY zotero.preferences.showIn.appTab "App tab">
-<!ENTITY zotero.preferences.statusBarIcon "Status bar Ikurra:">
-<!ENTITY zotero.preferences.statusBarIcon.none "Kendu">
 <!ENTITY zotero.preferences.fontSize "Font neurria:">
 <!ENTITY zotero.preferences.fontSize.small "txikia">
 <!ENTITY zotero.preferences.fontSize.medium "erdia">
@@ -109,6 +107,7 @@
 <!ENTITY zotero.preferences.quickCopy.siteEditor.domainPath "Domain/Path">
 <!ENTITY zotero.preferences.quickCopy.siteEditor.domainPath.example "(e.g. wikipedia.org)">
 <!ENTITY zotero.preferences.quickCopy.siteEditor.outputFormat "Output Format">
+<!ENTITY zotero.preferences.quickCopy.siteEditor.locale "Language">
 <!ENTITY zotero.preferences.quickCopy.dragLimit "Disable Quick Copy when dragging more than">
 
 <!ENTITY zotero.preferences.prefpane.cite "Cite">
@@ -124,8 +123,6 @@
 <!ENTITY zotero.preferences.cite.styles.styleManager.updated "Updated">
 <!ENTITY zotero.preferences.cite.styles.styleManager.csl "CSL">
 <!ENTITY zotero.preferences.export.getAdditionalStyles "Estilo gehialgo instalatu...">
-
-<!ENTITY zotero.preferences.prefpane.keys "Teklatu-komandoak">
 
 <!ENTITY zotero.preferences.keys.openZotero "Ireki/Itxi Zotero panela">
 <!ENTITY zotero.preferences.keys.saveToZotero "Save to Zotero (address bar icon)">
@@ -148,6 +145,7 @@
 <!ENTITY zotero.preferences.proxies.desc_after_link "for more information.">
 <!ENTITY zotero.preferences.proxies.transparent "Automatically remember proxied resources">
 <!ENTITY zotero.preferences.proxies.autoRecognize "Automatically recognize proxied resources">
+<!ENTITY zotero.preferences.proxies.showRedirectNotification "Show notification when redirecting through a proxy">
 <!ENTITY zotero.preferences.proxies.disableByDomain "Disable proxy redirection when my domain name contains ">
 <!ENTITY zotero.preferences.proxies.configured "Configured Proxies">
 <!ENTITY zotero.preferences.proxies.hostname "Hostname">
@@ -164,6 +162,7 @@
 
 <!ENTITY zotero.preferences.prefpane.advanced "Advanced">
 <!ENTITY zotero.preferences.advanced.filesAndFolders "Files and Folders">
+<!ENTITY zotero.preferences.advanced.keys "Shortcuts">
 
 <!ENTITY zotero.preferences.prefpane.locate "Locate">
 <!ENTITY zotero.preferences.locate.locateEngineManager "Article Lookup Engine Manager">
@@ -204,6 +203,6 @@
 <!ENTITY zotero.preferences.debugOutputLogging.submitToServer "Bidali Zotero zerbitzarira">
 
 <!ENTITY zotero.preferences.openAboutConfig "Open about:config">
-<!ENTITY zotero.preferences.openCSLEdit "Open CSL Editor">
-<!ENTITY zotero.preferences.openCSLPreview "Open CSL Preview">
+<!ENTITY zotero.preferences.openCSLEdit "Open Style Editor">
+<!ENTITY zotero.preferences.openCSLPreview "Open Style Preview">
 <!ENTITY zotero.preferences.openAboutMemory "Open about:memory">

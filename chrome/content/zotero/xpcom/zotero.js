@@ -23,26 +23,8 @@
     ***** END LICENSE BLOCK *****
 */
 
-const ZOTERO_CONFIG = {
-	GUID: 'zotero@chnm.gmu.edu',
-	DB_REBUILD: false, // erase DB and recreate from schema
-	REPOSITORY_URL: 'https://repo.zotero.org/repo',
-	REPOSITORY_CHECK_INTERVAL: 86400, // 24 hours
-	REPOSITORY_RETRY_INTERVAL: 3600, // 1 hour
-	BASE_URI: 'http://zotero.org/',
-	WWW_BASE_URL: 'http://www.zotero.org/',
-	PROXY_AUTH_URL: 'http://zotero.org.s3.amazonaws.com/proxy-auth',
-	SYNC_URL: 'https://sync.zotero.org/',
-	API_URL: 'https://api.zotero.org/',
-	API_VERSION: 2,
-	PREF_BRANCH: 'extensions.zotero.',
-	BOOKMARKLET_ORIGIN : 'https://www.zotero.org',
-	HTTP_BOOKMARKLET_ORIGIN : 'http://www.zotero.org',
-	BOOKMARKLET_URL: 'https://www.zotero.org/bookmarklet/',
-	VERSION: "4.0.21.SOURCE"
-};
-
 // Commonly used imports accessible anywhere
+Components.utils.import("resource://zotero/config.js");
 Components.utils.import("resource://zotero/q.js");
 Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
 Components.utils.import("resource://gre/modules/Services.jsm");
@@ -64,16 +46,15 @@ Components.utils.import("resource://gre/modules/Services.jsm");
 	this.logError = logError;
 	this.getErrors = getErrors;
 	this.getSystemInfo = getSystemInfo;
-	this.safeDebug = safeDebug;
 	this.getString = getString;
 	this.localeJoin = localeJoin;
-	this.getLocaleCollation = getLocaleCollation;
 	this.setFontSize = setFontSize;
 	this.flattenArguments = flattenArguments;
 	this.getAncestorByTagName = getAncestorByTagName;
 	this.join = join;
 	this.randomString = randomString;
 	this.moveToUnique = moveToUnique;
+	this.reinit = reinit; // defined in zotero-service.js
 	
 	// Public properties
 	this.initialized = false;
@@ -229,21 +210,18 @@ Components.utils.import("resource://gre/modules/Services.jsm");
 		
 		if (options) {
 			if (options.openPane) this.openPane = true;
+			if (options.noUserInput) this.noUserInput = true;
 		}
 		
 		this.mainThread = Components.classes["@mozilla.org/thread-manager;1"].getService().mainThread;
+		
+		this.clientName = ZOTERO_CONFIG.CLIENT_NAME;
 		
 		var appInfo = Components.classes["@mozilla.org/xre/app-info;1"]
 			.getService(Components.interfaces.nsIXULAppInfo);
 		this.platformVersion = appInfo.platformVersion;
 		this.platformMajorVersion = parseInt(appInfo.platformVersion.match(/^[0-9]+/)[0]);
 		this.isFx = true;
-		this.isFx3 = false;
-		this.isFx35 = false;
-		this.isFx31 = false;
-		this.isFx36 = false;
-		this.isFx4 = true;
-		this.isFx5 = true;
 		
 		this.isStandalone = appInfo.ID == ZOTERO_CONFIG['GUID'];
 		if(this.isStandalone) {
@@ -318,6 +296,7 @@ Components.utils.import("resource://gre/modules/Services.jsm");
 		else {
 			Zotero.dir = 'ltr';
 		}
+		Zotero.rtl = Zotero.dir == 'rtl';
 
 		// Make sure that Zotero Standalone is not running as root
 		if(Zotero.isStandalone && !Zotero.isWin) _checkRoot();
@@ -455,7 +434,8 @@ Components.utils.import("resource://gre/modules/Services.jsm");
 		try {
 			var messages = {};
 			cs.getMessageArray(messages, {});
-			_startupErrors = [msg for each(msg in messages.value) if(_shouldKeepError(msg))];
+			_startupErrors = Object.keys(messages.value).map(i => messages[i])
+				.filter(msg => _shouldKeepError(msg));
 		} catch(e) {
 			Zotero.logError(e);
 		}
@@ -630,20 +610,23 @@ Components.utils.import("resource://gre/modules/Services.jsm");
 				var updated = Zotero.Schema.updateSchema();
 			}
 			catch (e) {
-				if (typeof e == 'string' && e.match('newer than SQL file')) {
-					var kbURL = "http://zotero.org/support/kb/newer_db_version";
-					var msg = Zotero.localeJoin([
-							Zotero.getString('startupError.zoteroVersionIsOlder'),
-							Zotero.getString('startupError.zoteroVersionIsOlder.upgrade')
-						]) + "\n\n"
-						+ Zotero.getString('startupError.zoteroVersionIsOlder.current', Zotero.version) + "\n\n"
-						+ Zotero.getString('general.seeForMoreInformation', kbURL);
+				if (e instanceof Zotero.DB.IncompatibleVersionException) {
+					let kbURL = "https://www.zotero.org/support/kb/newer_db_version";
+					let msg = (e.dbClientVersion
+						? Zotero.getString('startupError.incompatibleDBVersion',
+							[Zotero.clientName, e.dbClientVersion])
+						: Zotero.getString('startupError.zoteroVersionIsOlder')) + "\n\n"
+						+ Zotero.getString('startupError.zoteroVersionIsOlder.current', Zotero.version)
+							+ "\n\n"
+						+ Zotero.getString('startupError.zoteroVersionIsOlder.upgrade',
+							ZOTERO_CONFIG.DOMAIN_NAME);
 					Zotero.startupError = msg;
 					_startupErrorHandler = function() {
 						var ps = Components.classes["@mozilla.org/embedcomp/prompt-service;1"]
 							.getService(Components.interfaces.nsIPromptService);
 						var buttonFlags = (ps.BUTTON_POS_0) * (ps.BUTTON_TITLE_IS_STRING)
 							+ (ps.BUTTON_POS_1) * (ps.BUTTON_TITLE_CANCEL)
+							+ (ps.BUTTON_POS_2) * (ps.BUTTON_TITLE_IS_STRING)
 							+ ps.BUTTON_POS_0_DEFAULT;
 						
 						var index = ps.confirmEx(
@@ -652,10 +635,13 @@ Components.utils.import("resource://gre/modules/Services.jsm");
 							Zotero.startupError,
 							buttonFlags,
 							Zotero.getString('general.checkForUpdate'),
-							null, null, null, {}
+							null,
+							Zotero.getString('general.moreInformation'),
+							null,
+							{}
 						);
 						
-						// "Check for updates" button
+						// "Check for Update" button
 						if(index === 0) {
 							if(Zotero.isStandalone) {
 								Components.classes["@mozilla.org/embedcomp/window-watcher;1"]
@@ -699,6 +685,17 @@ Components.utils.import("resource://gre/modules/Services.jsm");
 									}
 								);
 							}
+						}
+						// Load More Info page
+						else if (index == 2) {
+							let io = Components.classes['@mozilla.org/network/io-service;1']
+							.getService(Components.interfaces.nsIIOService);
+							let uri = io.newURI(kbURL, null, null);
+							let handler = Components.classes['@mozilla.org/uriloader/external-protocol-service;1']
+							.getService(Components.interfaces.nsIExternalProtocolService)
+							.getProtocolHandlerInfo('http');
+							handler.preferredAction = Components.interfaces.nsIHandlerInfo.useSystemDefault;
+							handler.launchWithURI(uri, null);
 						}
 					};
 				}
@@ -1319,14 +1316,38 @@ Components.utils.import("resource://gre/modules/Services.jsm");
 	}
 	
 	/**
-	 * Log a JS error to the Mozilla JS error console.
+	 * Log a JS error to Mozilla JS error console and debug output
 	 * @param {Exception} err
 	 */
 	function logError(err) {
+		Zotero.debug(err, 1);
 		log(err.message ? err.message : err.toString(), "error",
 			err.fileName ? err.fileName : (err.filename ? err.filename : null), null,
 			err.lineNumber ? err.lineNumber : null, null);
 	}
+	
+	
+	/**
+	 * Display an alert in a given window
+	 *
+	 * This is just a wrapper around nsIPromptService.alert() that takes the Zotero.noUserInput
+	 * flag into consideration
+	 *
+	 * @param {Window}
+	 * @param {String} title
+	 * @param {String} msg
+	 */
+	this.alert = function (window, title, msg) {
+		if (this.noUserInput) {
+			Zotero.debug("Not displaying alert: " + title + ": " + msg);
+			return;
+		}
+		
+		var ps = Components.classes["@mozilla.org/embedcomp/prompt-service;1"]
+			.getService(Components.interfaces.nsIPromptService);
+		ps.alert(window, title, msg);
+	}
+	
 	
 	function getErrors(asStrings) {
 		var errors = [];
@@ -1422,22 +1443,6 @@ Components.utils.import("resource://gre/modules/Services.jsm");
 		AddonManager.getAllAddons(onHaveInstalledAddons);
 	}
 	
-	
-	function safeDebug(obj){
-		for (var i in obj){
-			try {
-				Zotero.debug(i + ': ' + obj[i]);
-			}
-			catch (e){
-				try {
-					Zotero.debug(i + ': ERROR');
-				}
-				catch (e){}
-			}
-		}
-	}
-	
-	
 	function getString(name, params){
 		try {
 			if (params != undefined){
@@ -1451,6 +1456,13 @@ Components.utils.import("resource://gre/modules/Services.jsm");
 			}
 		}
 		catch (e){
+			if (e.name == 'NS_ERROR_ILLEGAL_VALUE') {
+				Zotero.debug(params, 1);
+			}
+			else if (e.name != 'NS_ERROR_FAILURE') {
+				Components.utils.reportError(e);
+				Zotero.debug(e, 1);
+			}
 			throw ('Localized string not available for ' + name);
 		}
 		return l10n;
@@ -1473,12 +1485,85 @@ Components.utils.import("resource://gre/modules/Services.jsm");
 	}
 	
 	
-	function getLocaleCollation() {
+	this.getLocaleCollation = function () {
+		if (this.collation) {
+			return this.collation;
+		}
+		
 		var localeService = Components.classes["@mozilla.org/intl/nslocaleservice;1"]
-			.getService(Components.interfaces.nsILocaleService);
-		var collationFactory = Components.classes["@mozilla.org/intl/collation-factory;1"]
-			.getService(Components.interfaces.nsICollationFactory);
-		return collationFactory.CreateCollation(localeService.getApplicationLocale());
+				.getService(Components.interfaces.nsILocaleService);
+		var appLocale = localeService.getApplicationLocale();
+		
+		// Use nsICollation before Fx30
+		if (Zotero.platformMajorVersion < 30) {
+			var localeService = Components.classes["@mozilla.org/intl/nslocaleservice;1"]
+				.getService(Components.interfaces.nsILocaleService);
+			var collationFactory = Components.classes["@mozilla.org/intl/collation-factory;1"]
+				.getService(Components.interfaces.nsICollationFactory);
+			return this.collation = collationFactory.CreateCollation(appLocale);
+		}
+		
+		try {
+			var locale = appLocale.getCategory('NSILOCALE_COLLATE');
+			// Extract a valid language tag
+			locale = locale.match(/^[a-z]{2}(\-[A-Z]{2})?/)[0];
+			var collator = new Intl.Collator(locale, {
+				ignorePunctuation: true,
+				numeric: true,
+				sensitivity: 'base'
+			});
+		}
+		catch (e) {
+			Zotero.debug(e, 1);
+			
+			// If there's an error, just skip sorting
+			collator = {
+				compare: function (a, b) {
+					return 0;
+				}
+			};
+		}
+		
+		// Grab all ASCII punctuation and space at the begining of string
+		var initPunctuationRE = /^[\x20-\x2F\x3A-\x40\x5B-\x60\x7B-\x7E]+/;
+		// Punctuation that should be ignored when sorting
+		var ignoreInitRE = /["'[{(]+$/;
+		
+		// Until old code is updated, pretend we're returning an nsICollation
+		return this.collation = {
+			compareString: function (_, a, b) {
+				if (!a && !b) return 0;
+				if (!a || !b) return b ? -1 : 1;
+				
+				// Compare initial punctuation
+				var aInitP = initPunctuationRE.exec(a) || '';
+				var bInitP = initPunctuationRE.exec(b) || '';
+				
+				var aWordStart = 0, bWordStart = 0;
+				if (aInitP) {
+					aWordStart = aInitP[0].length;
+					aInitP = aInitP[0].replace(ignoreInitRE, '');
+				}
+				if (bInitP) {
+					bWordStart = bInitP.length;
+					bInitP = bInitP[0].replace(ignoreInitRE, '');
+				}
+				
+				// If initial punctuation is equivalent, use collator comparison
+				// that ignores all punctuation
+				if (aInitP == bInitP || !aInitP && !bInitP) return collator.compare(a, b);
+				
+				// Otherwise consider "attached" words as well, e.g. the order should be
+				// "__ n", "__z", "_a"
+				// We don't actually care what the attached word is, just whether it's
+				// there, since at this point we're guaranteed to have non-equivalent
+				// initial punctuation
+				if (aWordStart < a.length) aInitP += 'a';
+				if (bWordStart < b.length) bInitP += 'a';
+				
+				return aInitP.localeCompare(bInitP);
+			}
+		};
 	}
 	
 	
@@ -2036,7 +2121,12 @@ Components.utils.import("resource://gre/modules/Services.jsm");
 			'[JavaScript Error: "this.docShell is null"',
 			'[JavaScript Error: "downloadable font:',
 			'[JavaScript Error: "Image corrupt or truncated:',
-			'[JavaScript Error: "The character encoding of the'
+			'[JavaScript Error: "The character encoding of the',
+			'nsLivemarkService.js',
+			'Sync.Engine.Tabs',
+			'content-sessionStore.js',
+			'org.mozilla.appSessions',
+			'bad script XDR magic number'
 		];
 		
 		for (var i=0; i<blacklist.length; i++) {
@@ -2119,7 +2209,7 @@ Zotero.Prefs = new function(){
 		if (!fromVersion) {
 			fromVersion = 0;
 		}
-		var toVersion = 1;
+		var toVersion = 2;
 		if (fromVersion < toVersion) {
 			for (var i = fromVersion + 1; i <= toVersion; i++) {
 				switch (i) {
@@ -2135,6 +2225,14 @@ Zotero.Prefs = new function(){
 								this.set('sync.storage.downloadMode.groups', 'on-sync');
 							}
 						}
+						break;
+					
+					case 2:
+						// Re-show saveButton guidance panel (and clear old saveIcon pref).
+						// The saveButton guidance panel initially could auto-hide too easily.
+						this.clear('firstRunGuidanceShown.saveIcon');
+						this.clear('firstRunGuidanceShown.saveButton');
+						break;
 				}
 			}
 			this.set('prefVersion', toVersion);
@@ -2160,7 +2258,7 @@ Zotero.Prefs = new function(){
 				case branch.PREF_BOOL:
 					return branch.getBoolPref(pref);
 				case branch.PREF_STRING:
-					return branch.getCharPref(pref);
+					return '' + branch.getComplexValue(pref, Components.interfaces.nsISupportsString);
 				case branch.PREF_INT:
 					return branch.getIntPref(pref);
 			}
@@ -2248,6 +2346,72 @@ Zotero.Prefs = new function(){
 		// TODO: parse settings XML
 	}
 	
+	// Handlers for some Zotero preferences
+	var _handlers = [
+		[ "automaticScraperUpdates", function(val) {
+			if (val){
+				Zotero.Schema.updateFromRepository();
+			}
+			else {
+				Zotero.Schema.stopRepositoryTimer();
+			}
+		}],
+		[ "note.fontSize", function(val) {
+			if (val < 6) {
+				Zotero.Prefs.set('note.fontSize', 11);
+			}
+		}],
+		[ "zoteroDotOrgVersionHeader", function(val) {
+			if (val) {
+				Zotero.VersionHeader.register();
+			}
+			else {
+				Zotero.VersionHeader.unregister();
+			}
+		}],
+		[ "zoteroDotOrgVersionHeader", function(val) {
+			if (val) {
+				Zotero.VersionHeader.register();
+			}
+			else {
+				Zotero.VersionHeader.unregister();
+			}
+		}],
+		[ "sync.autoSync", function(val) {
+			if (val) {
+				Zotero.Sync.Runner.IdleListener.register();
+			}
+			else {
+				Zotero.Sync.Runner.IdleListener.unregister();
+			}
+		}],
+		[ "sync.fulltext.enabled", function(val) {
+			if (val) {
+				// Disable downgrades if full-text sync is enabled, since otherwise
+				// we could miss full-text content updates
+				if (Zotero.DB.valueQuery("SELECT version FROM version WHERE schema='userdata'") < 77) {
+					Zotero.DB.query("UPDATE version SET version=77 WHERE schema='userdata'");
+				}
+			}
+		}],
+		[ "search.quicksearch-mode", function(val) {
+			var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]
+						.getService(Components.interfaces.nsIWindowMediator);
+			var enumerator = wm.getEnumerator("navigator:browser");
+			while (enumerator.hasMoreElements()) {
+				var win = enumerator.getNext();
+				if (!win.ZoteroPane) continue;
+				Zotero.updateQuickSearchBox(win.ZoteroPane.document);
+			}
+			
+			var enumerator = wm.getEnumerator("zotero:item-selector");
+			while (enumerator.hasMoreElements()) {
+				var win = enumerator.getNext();
+				if (!win.Zotero) continue;
+				Zotero.updateQuickSearchBox(win.document);
+			}
+		}]
+	];
 	
 	//
 	// Methods to register a preferences observer
@@ -2255,6 +2419,11 @@ Zotero.Prefs = new function(){
 	function register(){
 		this.prefBranch.QueryInterface(Components.interfaces.nsIPrefBranch2);
 		this.prefBranch.addObserver("", this, false);
+		
+		// Register pre-set handlers
+		for (var i=0; i<_handlers.length; i++) {
+			this.registerObserver(_handlers[i][0], _handlers[i][1]);
+		}
 	}
 	
 	function unregister(){
@@ -2264,140 +2433,48 @@ Zotero.Prefs = new function(){
 		this.prefBranch.removeObserver("", this);
 	}
 	
+	/**
+	 * @param {nsIPrefBranch} subject The nsIPrefBranch we're observing (after appropriate QI)
+	 * @param {String} topic The string defined by NS_PREFBRANCH_PREFCHANGE_TOPIC_ID
+	 * @param {String} data The name of the pref that's been changed (relative to subject)
+	 */
 	function observe(subject, topic, data){
-		if(topic!="nsPref:changed"){
+		if (topic != "nsPref:changed" || !_observers[data] || !_observers[data].length) {
 			return;
 		}
 		
-		try {
-		
-		// subject is the nsIPrefBranch we're observing (after appropriate QI)
-		// data is the name of the pref that's been changed (relative to subject)
-		switch (data) {
-			case "statusBarIcon":
-				var doc = Components.classes["@mozilla.org/appshell/window-mediator;1"]
-							.getService(Components.interfaces.nsIWindowMediator)
-							.getMostRecentWindow("navigator:browser").document;
-				
-				var addonBar = doc.getElementById("addon-bar");
-				var icon = doc.getElementById("zotero-toolbar-button");
-				// When the customize window is open, toolbar buttons seem to
-				// become wrapped in toolbarpaletteitems, which we need to remove
-				// manually if we change the pref to hidden or else the customize
-				// window doesn't close.
-				var wrapper = doc.getElementById("wrapper-zotero-toolbar-button");
-				var palette = doc.getElementById("navigator-toolbox").palette;
-				var inAddonBar = false;
-				if (icon) {
-					// Because of the potential wrapper, don't just use .parentNode
-					var toolbar = Zotero.getAncestorByTagName(icon, "toolbar");
-					inAddonBar = toolbar == addonBar;
-				}
-				var val = this.get("statusBarIcon");
-				if (val == 0) {
-					// If showing in add-on bar, hide
-					if (!icon || !inAddonBar) {
-						return;
-					}
-					palette.appendChild(icon);
-					if (wrapper) {
-						addonBar.removeChild(wrapper);
-					}
-					addonBar.setAttribute("currentset", addonBar.currentSet);
-					doc.persist(addonBar.id, "currentset");
-				}
-				else {
-					// If showing somewhere else, remove it from there
-					if (icon && !inAddonBar) {
-						palette.appendChild(icon);
-						if (wrapper) {
-							toolbar.removeChild(wrapper);
-						}
-						toolbar.setAttribute("currentset", toolbar.currentSet);
-						doc.persist(toolbar.id, "currentset");
-					}
-					
-					// If not showing in add-on bar, add
-					if (!inAddonBar) {
-						var icon = addonBar.insertItem("zotero-toolbar-button");
-						addonBar.setAttribute("currentset", addonBar.currentSet);
-						doc.persist(addonBar.id, "currentset");
-						addonBar.setAttribute("collapsed", false);
-						doc.persist(addonBar.id, "collapsed");
-					}
-					// And make small
-					if (val == 1) {
-						icon.setAttribute("compact", true);
-					}
-					// Or large
-					else if (val == 2) {
-						icon.removeAttribute("compact");
-					}
-				}
-				break;
-			
-			case "automaticScraperUpdates":
-				if (this.get('automaticScraperUpdates')){
-					Zotero.Schema.updateFromRepository();
-				}
-				else {
-					Zotero.Schema.stopRepositoryTimer();
-				}
-				break;
-			
-			case "zoteroDotOrgVersionHeader":
-				if (this.get("zoteroDotOrgVersionHeader")) {
-					Zotero.VersionHeader.register();
-				}
-				else {
-					Zotero.VersionHeader.unregister();
-				}
-				break;
-			
-			case "sync.autoSync":
-				if (this.get("sync.autoSync")) {
-					Zotero.Sync.Runner.IdleListener.register();
-				}
-				else {
-					Zotero.Sync.Runner.IdleListener.unregister();
-				}
-				break;
-			
-			// TEMP
-			case "sync.fulltext.enabled":
-				if (this.get("sync.fulltext.enabled")) {
-					// Disable downgrades if full-text sync is enabled, since otherwise
-					// we could miss full-text content updates
-					if (Zotero.DB.valueQuery("SELECT version FROM version WHERE schema='userdata'") < 77) {
-						Zotero.DB.query("UPDATE version SET version=77 WHERE schema='userdata'");
-					}
-				}
-				break;
-			
-			case "search.quicksearch-mode":
-				var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]
-							.getService(Components.interfaces.nsIWindowMediator);
-				var enumerator = wm.getEnumerator("navigator:browser");
-				while (enumerator.hasMoreElements()) {
-					var win = enumerator.getNext();
-					if (!win.ZoteroPane) continue;
-					Zotero.updateQuickSearchBox(win.ZoteroPane.document);
-				}
-				
-				var enumerator = wm.getEnumerator("zotero:item-selector");
-				while (enumerator.hasMoreElements()) {
-					var win = enumerator.getNext();
-					if (!win.Zotero) continue;
-					Zotero.updateQuickSearchBox(win.document);
-				}
-				break;
+		var obs = _observers[data];
+		for (var i=0; i<obs.length; i++) {
+			try {
+				obs[i](this.get(data));
+			}
+			catch (e) {
+				Zotero.debug("Error while executing preference observer handler for " + data);
+				Zotero.debug(e);
+			}
+		}
+	}
+	
+	var _observers = {};
+	this.registerObserver = function(name, handler) {
+		_observers[name] = _observers[name] || [];
+		_observers[name].push(handler);
+	}
+	
+	this.unregisterObserver = function(name, handler) {
+		var obs = _observers[name];
+		if (!obs) {
+			Zotero.debug("No preferences observer registered for " + name);
+			return;
 		}
 		
+		var i = obs.indexOf(handler);
+		if (i == -1) {
+			Zotero.debug("Handler was not registered for preference " + name);
+			return;
 		}
-		catch (e) {
-			Zotero.debug(e);
-			throw (e);
-		}
+		
+		obs.splice(i, 1);
 	}
 }
 
@@ -2548,6 +2625,9 @@ Zotero.DragDrop = {
 			var files = [];
 			for (var i=0; i<len; i++) {
 				var file = dt.mozGetDataAt("application/x-moz-file", i);
+				if (!file) {
+					continue;
+				}
 				file.QueryInterface(Components.interfaces.nsIFile);
 				// Don't allow folder drag
 				if (file.isDirectory()) {
@@ -2587,6 +2667,9 @@ Zotero.DragDrop = {
 				return false;
 			}
 			var win = sourceNode.ownerDocument.defaultView;
+			if (win.document.documentElement.getAttribute('windowtype') == 'zotero:search') {
+				return win.ZoteroAdvancedSearch.itemsView.itemGroup;
+			}
 			return win.ZoteroPane.collectionsView.itemGroup;
 		}
 		else {
@@ -2710,8 +2793,9 @@ Zotero.UnresponsiveScriptIndicator = new function() {
 Zotero.WebProgressFinishListener = function(onFinish) {
 	this.onStateChange = function(wp, req, stateFlags, status) {
 		//Zotero.debug('onStageChange: ' + stateFlags);
-		if ((stateFlags & Components.interfaces.nsIWebProgressListener.STATE_STOP)
-				&& (stateFlags & Components.interfaces.nsIWebProgressListener.STATE_IS_NETWORK)) {
+		if (stateFlags & Components.interfaces.nsIWebProgressListener.STATE_STOP
+				&& stateFlags & Components.interfaces.nsIWebProgressListener.STATE_IS_REQUEST
+				&& stateFlags & Components.interfaces.nsIWebProgressListener.STATE_IS_NETWORK) {
 			onFinish();
 		}
 	}

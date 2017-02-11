@@ -73,6 +73,8 @@ Zotero.CollectionTreeView.prototype.setTree = function(treebox)
 	var self = this;
 	
 	tree.addEventListener('keypress', function(event) {
+		if (tree.editingRow != -1) return; // In-line editing active
+		
 		var key = String.fromCharCode(event.which);
 		
 		if (key == '+' && !(event.ctrlKey || event.altKey || event.metaKey)) {
@@ -382,10 +384,38 @@ Zotero.CollectionTreeView.prototype.setHighlightedRows = function (ids) {
 	this._highlightedRows = {};
 	this._treebox.invalidate();
 	
-	for each(var id in ids) {
+	if (!ids || !ids.length) {
+		return;
+	}
+	
+	// Make sure all highlighted collections are shown
+	for (let id of ids) {
 		this.expandToCollection(id);
-		this._highlightedRows[this._collectionRowMap[id]] = true;
-		this._treebox.invalidateRow(this._collectionRowMap[id]);
+	}
+	
+	// Highlight rows
+	var rows = [];
+	for (let id of ids) {
+		let row = this._collectionRowMap[id];
+		this._highlightedRows[row] = true;
+		this._treebox.invalidateRow(row);
+		rows.push(row);
+	}
+	rows.sort();
+	var firstRow = this._treebox.getFirstVisibleRow();
+	var lastRow = this._treebox.getLastVisibleRow();
+	var scrolled = false;
+	for (let row of rows) {
+		// If row is visible, stop
+		if (row >= firstRow && row <= lastRow) {
+			scrolled = true;
+			break;
+		}
+	}
+	// Select first collection
+	// TODO: Select closest? Select a few rows above or below?
+	if (!scrolled) {
+		this._treebox.ensureRowIsVisible(rows[0]);
 	}
 }
 
@@ -419,6 +449,8 @@ Zotero.CollectionTreeView.prototype.getCellText = function(row, column)
 
 Zotero.CollectionTreeView.prototype.getImageSrc = function(row, col)
 {
+	var suffix = Zotero.hiDPI ? "@2x" : "";
+	
 	var itemGroup = this._getItemAtRow(row);
 	var collectionType = itemGroup.type;
 	
@@ -456,10 +488,13 @@ Zotero.CollectionTreeView.prototype.getImageSrc = function(row, col)
 		
 		case 'collection':
 		case 'search':
-			return "chrome://zotero-platform/content/treesource-" + collectionType + ".png";
+			if (Zotero.isMac) {
+				return "chrome://zotero-platform/content/treesource-" + collectionType + ".png";
+			}
+			break;
 	}
 	
-	return "chrome://zotero/skin/treesource-" + collectionType + ".png";
+	return "chrome://zotero/skin/treesource-" + collectionType + suffix + ".png";
 }
 
 Zotero.CollectionTreeView.prototype.isContainer = function(row)
@@ -575,6 +610,29 @@ Zotero.CollectionTreeView.prototype.isSelectable = function (row, col) {
 }
 
 
+/**
+ * Tree method for whether to allow inline editing (not to be confused with this.editable)
+ */
+Zotero.CollectionTreeView.prototype.isEditable = function (row, col) {
+	return this.itemGroup.isCollection() && this.editable;
+}
+
+
+Zotero.CollectionTreeView.prototype.setCellText = function (row, col, val) {
+	val = val.trim();
+	if (val === "") {
+		return;
+	}
+	var itemGroup = this._getItemAtRow(row);
+	itemGroup.ref.name = val;
+	itemGroup.ref.save();
+}
+
+
+
+/**
+ * Returns TRUE if the underlying view is editable
+ */
 Zotero.CollectionTreeView.prototype.__defineGetter__('editable', function () {
 	return this._getItemAtRow(this.selection.currentIndex).editable;
 });
@@ -623,7 +681,12 @@ Zotero.CollectionTreeView.prototype.collapseLibrary = function(self) {
 	
 	var found = false;
 	for (var i=self.rowCount-1; i>=0; i--) {
-		if (self._getItemAtRow(i).ref.libraryID !== selectedLibraryID) {
+		let rowLibraryID = self._getItemAtRow(i).ref.libraryID;
+		// TEMP: Remove in 5.0 when we can just compare libraryIDs without worrying about null
+		if (rowLibraryID === 0) {
+			rowLibraryID = null;
+		}
+		if (rowLibraryID !== selectedLibraryID) {
 			// Once we've moved beyond the original library, stop looking
 			if (found) {
 				break;
@@ -714,6 +777,54 @@ Zotero.CollectionTreeView.prototype.selectLibrary = function (libraryID) {
 		}
 		
 		if (itemGroup.ref && itemGroup.ref.libraryID == libraryID) {
+			this._treebox.ensureRowIsVisible(i);
+			this.selection.select(i);
+			return true;
+		}
+	}
+	
+	return false;
+}
+
+
+Zotero.CollectionTreeView.prototype.selectTrash = function (libraryID) {
+	if (Zotero.suppressUIUpdates) {
+		Zotero.debug("UI updates suppressed -- not changing library selection");
+		return false;
+	}
+	
+	// Check if trash is already selected
+	if (this.selection.currentIndex != -1) {
+		let itemGroup = this._getItemAtRow(this.selection.currentIndex);
+		if (itemGroup.isTrash() && itemGroup.ref.libraryID == libraryID) {
+			this._treebox.ensureRowIsVisible(this.selection.currentIndex);
+			return true;
+		}
+	}
+	
+	// If in My Library and it's collapsed, open it
+	if (!libraryID && !this.isContainerOpen(0)) {
+		this.toggleOpenState(0);
+	}
+	
+	// Find library trash
+	for (let i = 0; i < this.rowCount; i++) {
+		let itemGroup = this._getItemAtRow(i);
+		
+		// If group header is closed, open it
+		if (itemGroup.isHeader() && itemGroup.ref.id == 'group-libraries-header'
+				&& !this.isContainerOpen(i)) {
+			this.toggleOpenState(i);
+			continue;
+		}
+		
+		if (itemGroup.isLibrary(true) && itemGroup.ref.libraryID == libraryID
+				&& !this.isContainerOpen(i)) {
+			this.toggleOpenState(i);
+			continue;
+		}
+		
+		if (itemGroup.isTrash() && itemGroup.ref.libraryID == libraryID) {
 			this._treebox.ensureRowIsVisible(i);
 			this.selection.select(i);
 			return true;
@@ -935,9 +1046,7 @@ Zotero.CollectionTreeView.prototype._expandRow = function (row, forceOpen) {
 	// Unfiled items
 	if (showUnfiled) {
 		var s = new Zotero.Search;
-		if (isGroup) {
-			s.libraryID = libraryID;
-		}
+		s.libraryID = intLibraryID;
 		s.name = Zotero.getString('pane.collections.unfiled');
 		s.addCondition('libraryID', 'is', libraryID);
 		s.addCondition('unfiled', 'true');
@@ -1558,6 +1667,18 @@ Zotero.CollectionTreeView.prototype.drop = function(row, orient, dataTransfer)
 							if (!addItems[parent]) {
 								addItems[parent] = [];
 							}
+							
+							// If source item is a top-level non-regular item (which can exist in a
+							// collection) but target item is a child item (which can't), add target
+							// item's parent to collection instead
+							if (!item.isRegularItem()) {
+								let targetItem = Zotero.Items.get(id);
+								let targetItemParentID = targetItem.getSource();
+								if (targetItemParentID) {
+									id = targetItemParentID;
+								}
+							}
+							
 							addItems[parent].push(id);
 						}
 					}
@@ -1685,8 +1806,12 @@ Zotero.CollectionTreeView.prototype.drop = function(row, orient, dataTransfer)
 		
 		// Add items to target collection
 		if (targetCollectionID) {
-			var collection = Zotero.Collections.get(targetCollectionID);
-			collection.addItems(newIDs);
+			let ids = newIDs.filter(function (itemID) {
+				var item = Zotero.Items.get(itemID);
+				return !item.getSource();
+			});
+			let collection = Zotero.Collections.get(targetCollectionID);
+			collection.addItems(ids);
 		}
 		
 		// If moving, remove items from source collection
@@ -1803,7 +1928,6 @@ Zotero.CollectionTreeView.prototype.drop = function(row, orient, dataTransfer)
 ////////////////////////////////////////////////////////////////////////////////
 
 Zotero.CollectionTreeView.prototype.isSorted = function() 							{ return false; }
-Zotero.CollectionTreeView.prototype.isEditable = function(row, idx) 				{ return false; }
 
 /* Set 'highlighted' property on rows set by setHighlightedRows */
 Zotero.CollectionTreeView.prototype.getRowProperties = function(row, prop) {
@@ -2067,21 +2191,6 @@ Zotero.ItemGroup.prototype.getSearchResults = function(asTempTable) {
 	
 	if(!Zotero.ItemGroupCache.lastResults) {
 		var s = this.getSearchObject();
-	
-		// FIXME: Hack to exclude group libraries for now
-		if (this.isSearch()) {
-			var currentLibraryID = this.ref.libraryID;
-			if (currentLibraryID) {
-				s.addCondition('libraryID', 'is', currentLibraryID);
-			}
-			else {
-				var groups = Zotero.Groups.getAll();
-				for each(var group in groups) {
-					s.addCondition('libraryID', 'isNot', group.libraryID);
-				}
-			}
-		}
-		
 		Zotero.ItemGroupCache.lastResults = s.search();
 		Zotero.ItemGroupCache.lastItemGroup = this;
 	}

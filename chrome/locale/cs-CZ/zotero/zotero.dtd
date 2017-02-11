@@ -6,9 +6,11 @@
 <!ENTITY zotero.general.delete "Smazat">
 <!ENTITY zotero.general.ok "OK">
 <!ENTITY zotero.general.cancel "Zrušit">
+<!ENTITY zotero.general.refresh "Obnovit">
+<!ENTITY zotero.general.saveAs "Uložit jako...">
 
 <!ENTITY zotero.errorReport.title "Chybová zpráva Zotera">
-<!ENTITY zotero.errorReport.unrelatedMessages "Záznam o chybách může obsahovat informace nesouvisející se Zoterem.">
+<!ENTITY zotero.errorReport.unrelatedMessages "Může obsahovat zprávy nesouvisející se Zoterem.">
 <!ENTITY zotero.errorReport.submissionInProgress "Čekejte, prosím, dokud nebude zpráva o chybách odeslána.">
 <!ENTITY zotero.errorReport.submitted "Zpráva o chybách byla odeslána.">
 <!ENTITY zotero.errorReport.reportID "ID hlášení:">
@@ -45,7 +47,7 @@
 <!ENTITY zotero.collections.showUnfiledItems "Zobrazit sjednocené položky">
 
 <!ENTITY zotero.items.itemType "Typ položky">
-<!ENTITY zotero.items.type_column "Item Type">
+<!ENTITY zotero.items.type_column "Typ položky">
 <!ENTITY zotero.items.title_column "Název">
 <!ENTITY zotero.items.creator_column "Tvůrce">
 <!ENTITY zotero.items.date_column "Datum">
@@ -123,7 +125,9 @@
 <!ENTITY zotero.item.textTransform "Převést text">
 <!ENTITY zotero.item.textTransform.titlecase "Velká Písmena">
 <!ENTITY zotero.item.textTransform.sentencecase "Velké první písmeno">
-<!ENTITY zotero.item.creatorTransform.nameSwap "Přehodit jméno/příjmení">
+<!ENTITY zotero.item.creatorTransform.nameSwap "Zaměnit křestní jména / přijmení">
+<!ENTITY zotero.item.viewOnline "Zobrazit online">
+<!ENTITY zotero.item.copyAsURL "Kopírovat jako URL">
 
 <!ENTITY zotero.toolbar.newNote "Nová poznámka">
 <!ENTITY zotero.toolbar.note.standalone "Nová samostatná poznámka">
@@ -161,6 +165,7 @@
 
 <!ENTITY zotero.bibliography.title "Vytvořit bibliografii">
 <!ENTITY zotero.bibliography.style.label "Citační styl:">
+<!ENTITY zotero.bibliography.locale.label "Jazyk:">
 <!ENTITY zotero.bibliography.outputMode "Výstupní režim:">
 <!ENTITY zotero.bibliography.bibliography "Bibligrafie">
 <!ENTITY zotero.bibliography.outputMethod "Výstupní metoda:">
@@ -185,9 +190,6 @@
 
 <!ENTITY zotero.citation.keepSorted.label "Ponechat zdroje seřazené">
 
-<!ENTITY zotero.citation.page "Stránka">
-<!ENTITY zotero.citation.paragraph "Odstavec">
-<!ENTITY zotero.citation.line "Řádek">
 <!ENTITY zotero.citation.suppressAuthor.label "Potlačit autora">
 <!ENTITY zotero.citation.prefix.label "Předpona:">
 <!ENTITY zotero.citation.suffix.label "Přípona:">
@@ -284,3 +286,7 @@
 <!ENTITY zotero.downloadManager.label "Uložit do Zotera">
 <!ENTITY zotero.downloadManager.saveToLibrary.description "Do zvolené knihovny nemohou být uloženy přílohy. Tato položka bude místo toho uložena do vaší knihovny.">
 <!ENTITY zotero.downloadManager.noPDFTools.description "Pokud chcete využít této funkce, musíte nejdříve v nastavení Zotera nainstalovat nástroje pro práci s PDF.">
+
+<!ENTITY zotero.attachLink.title "Připojit odkaz na URI">
+<!ENTITY zotero.attachLink.label.link "Odkaz:">
+<!ENTITY zotero.attachLink.label.title "Název:">

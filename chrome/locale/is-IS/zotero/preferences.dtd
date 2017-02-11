@@ -12,8 +12,6 @@
 <!ENTITY zotero.preferences.showIn.browserPane "Nýjum vafraglugga">
 <!ENTITY zotero.preferences.showIn.separateTab "Nýjum flipa">
 <!ENTITY zotero.preferences.showIn.appTab "Flipa í smáforriti">
-<!ENTITY zotero.preferences.statusBarIcon "Teikn í stöðuglugga:">
-<!ENTITY zotero.preferences.statusBarIcon.none "Engu">
 <!ENTITY zotero.preferences.fontSize "Stærð leturs:">
 <!ENTITY zotero.preferences.fontSize.small "Smátt">
 <!ENTITY zotero.preferences.fontSize.medium "Meðalstórt">
@@ -54,9 +52,9 @@
 <!ENTITY zotero.preferences.sync.syncServer "Zotero samhæfingarþjónn">
 <!ENTITY zotero.preferences.sync.createAccount "Nýr notandi">
 <!ENTITY zotero.preferences.sync.lostPassword "Týnt lykilorð?">
-<!ENTITY zotero.preferences.sync.syncAutomatically "Sjamhæfa sjálfkrafa">
-<!ENTITY zotero.preferences.sync.syncFullTextContent "Sync full-text content">
-<!ENTITY zotero.preferences.sync.syncFullTextContent.desc "Zotero can sync the full-text content of files in your Zotero libraries with zotero.org and other linked devices, allowing you to easily search for your files wherever you are. The full-text content of your files will not be shared publicly.">
+<!ENTITY zotero.preferences.sync.syncAutomatically "Samhæfa sjálfkrafa">
+<!ENTITY zotero.preferences.sync.syncFullTextContent "Samhæfa innihald skjala">
+<!ENTITY zotero.preferences.sync.syncFullTextContent.desc "Zotero getur samhæft innihald skjala í Zotero safninu þínu við zotero.org og önnur nettengd tæki sem gerir þér kleift að leita að þínum skjölum hvar sem þú ert. Innihaldi skjalanna er ekki deilt með öðrum.">
 <!ENTITY zotero.preferences.sync.about "Um samhæfingu">
 <!ENTITY zotero.preferences.sync.fileSyncing "Samhæfing skráa">
 <!ENTITY zotero.preferences.sync.fileSyncing.url "slóð:">
@@ -109,6 +107,7 @@
 <!ENTITY zotero.preferences.quickCopy.siteEditor.domainPath "Lén/Slóð">
 <!ENTITY zotero.preferences.quickCopy.siteEditor.domainPath.example "(t.d. wikipedia.org)">
 <!ENTITY zotero.preferences.quickCopy.siteEditor.outputFormat "Útkeyrslusnið">
+<!ENTITY zotero.preferences.quickCopy.siteEditor.locale "Tungumál">
 <!ENTITY zotero.preferences.quickCopy.dragLimit "Afvirkja Flýtiafrit þegar færðar eru meira en">
 
 <!ENTITY zotero.preferences.prefpane.cite "Tilvísun">
@@ -124,8 +123,6 @@
 <!ENTITY zotero.preferences.cite.styles.styleManager.updated "Uppfært">
 <!ENTITY zotero.preferences.cite.styles.styleManager.csl "Tilvísunarmál - CSL">
 <!ENTITY zotero.preferences.export.getAdditionalStyles "Ná í viðbótar leturstíla...">
-
-<!ENTITY zotero.preferences.prefpane.keys "Flýtihnappar">
 
 <!ENTITY zotero.preferences.keys.openZotero "Opna/Loka Zotero svæði">
 <!ENTITY zotero.preferences.keys.saveToZotero "Vista í Zotero (tákn birt í vefslóðareit)">
@@ -148,6 +145,7 @@
 <!ENTITY zotero.preferences.proxies.desc_after_link "til frekari upplýsinga.">
 <!ENTITY zotero.preferences.proxies.transparent "Virkja framvísun leppa">
 <!ENTITY zotero.preferences.proxies.autoRecognize "Sjálvirk auðkenning á leppagögnum">
+<!ENTITY zotero.preferences.proxies.showRedirectNotification "Tilkynna þegar framsent er gegnum staðgengil (proxy)">
 <!ENTITY zotero.preferences.proxies.disableByDomain "Afvirkja framvísun leppa þegar mitt nafn á léni inniheldur">
 <!ENTITY zotero.preferences.proxies.configured "Stilltir leppar">
 <!ENTITY zotero.preferences.proxies.hostname "Nafn hýsitölvu">
@@ -164,6 +162,7 @@
 
 <!ENTITY zotero.preferences.prefpane.advanced "Ítarlegt">
 <!ENTITY zotero.preferences.advanced.filesAndFolders "Skrár og möppur">
+<!ENTITY zotero.preferences.advanced.keys "Flýtivísanir">
 
 <!ENTITY zotero.preferences.prefpane.locate "Staðsetja">
 <!ENTITY zotero.preferences.locate.locateEngineManager "Stýring á greinaleitarvél">
@@ -204,6 +203,6 @@
 <!ENTITY zotero.preferences.debugOutputLogging.submitToServer "Senda til Zotero netþjóns">
 
 <!ENTITY zotero.preferences.openAboutConfig "Opna um: stillingar">
-<!ENTITY zotero.preferences.openCSLEdit "Opna CSL ritil">
-<!ENTITY zotero.preferences.openCSLPreview "Opna CSL forskoðun">
+<!ENTITY zotero.preferences.openCSLEdit "Breyta stíl">
+<!ENTITY zotero.preferences.openCSLPreview "Forskoðun stíls">
 <!ENTITY zotero.preferences.openAboutMemory "Opna um: minni">

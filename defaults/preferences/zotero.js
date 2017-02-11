@@ -26,7 +26,6 @@ pref("extensions.zotero.triggerProxyAuthentication", true);
 pref("extensions.zotero.proxyAuthenticationURLs", 'http://www.acm.org,http://www.ebscohost.com,http://www.elsevier.com,http://www.ieee.org,http://www.jstor.org,http://www.ovid.com,http://www.springer.com,http://www.tandfonline.com');
 pref("extensions.zotero.cacheTranslatorData",true);
 pref("extensions.zotero.showIn", 1);
-pref("extensions.zotero.statusBarIcon", 2);
 pref("extensions.zotero.browserContentContextMenu", true);
 pref("extensions.zotero.openURL.resolver","http://worldcatlibraries.org/registry/gateway");
 pref("extensions.zotero.openURL.version","1.0");
@@ -45,6 +44,7 @@ pref("extensions.zotero.sortAttachmentsChronologically", false);
 pref("extensions.zotero.showTrashWhenEmpty", true);
 pref("extensions.zotero.trashAutoEmptyDays", 30);
 pref("extensions.zotero.viewOnDoubleClick", true);
+pref("extensions.zotero.firstRunGuidance", true);
 
 pref("extensions.zotero.groups.copyChildLinks", true);
 pref("extensions.zotero.groups.copyChildFileAttachments", true);
@@ -99,7 +99,6 @@ pref("extensions.zotero.export.lastTranslator", '14763d24-8ba0-45df-8f52-b8d1108
 pref("extensions.zotero.export.translatorSettings", 'true,false');
 pref("extensions.zotero.export.lastStyle", 'http://www.zotero.org/styles/chicago-note-bibliography');
 pref("extensions.zotero.export.bibliographySettings", 'save-as-rtf');
-pref("extensions.zotero.export.bibliographyLocale", '');
 pref("extensions.zotero.export.displayCharsetOption", false);
 pref("extensions.zotero.export.citePaperJournalArticleURL", false);
 pref("extensions.zotero.cite.automaticJournalAbbreviations", true);
@@ -154,6 +153,7 @@ pref("extensions.zotero.proxies.autoRecognize", true);
 pref("extensions.zotero.proxies.transparent", true);
 pref("extensions.zotero.proxies.disableByDomain", false);
 pref("extensions.zotero.proxies.disableByDomainString", ".edu");
+pref("extensions.zotero.proxies.showRedirectNotification", true);
 
 // Data layer purging
 pref("extensions.zotero.purge.creators", false);

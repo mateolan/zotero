@@ -6,9 +6,11 @@
 <!ENTITY zotero.general.delete "삭제">
 <!ENTITY zotero.general.ok "OK">
 <!ENTITY zotero.general.cancel "Cancel">
+<!ENTITY zotero.general.refresh "Refresh">
+<!ENTITY zotero.general.saveAs "Save As…">
 
 <!ENTITY zotero.errorReport.title "Zotero Error Report">
-<!ENTITY zotero.errorReport.unrelatedMessages "오류 로그에는 Zotero와 관련이 없는 메시지가 포함될 수 있습니다.">
+<!ENTITY zotero.errorReport.unrelatedMessages "This may include messages unrelated to Zotero.">
 <!ENTITY zotero.errorReport.submissionInProgress "오류 보고가 제출되는 동안 기다려 주세요.">
 <!ENTITY zotero.errorReport.submitted "오류 보고가 제출되었습니다.">
 <!ENTITY zotero.errorReport.reportID "보고서 ID:">
@@ -123,7 +125,9 @@
 <!ENTITY zotero.item.textTransform "글자 변형">
 <!ENTITY zotero.item.textTransform.titlecase "글차 첫머리는 대문자">
 <!ENTITY zotero.item.textTransform.sentencecase "문장 첫머리는 대문자">
-<!ENTITY zotero.item.creatorTransform.nameSwap "Swap first/last names">
+<!ENTITY zotero.item.creatorTransform.nameSwap "Swap First/Last Names">
+<!ENTITY zotero.item.viewOnline "View Online">
+<!ENTITY zotero.item.copyAsURL "Copy as URL">
 
 <!ENTITY zotero.toolbar.newNote "새 노트">
 <!ENTITY zotero.toolbar.note.standalone "새로운 독립 노트">
@@ -161,6 +165,7 @@
 
 <!ENTITY zotero.bibliography.title "참조 문헌 목록 생성">
 <!ENTITY zotero.bibliography.style.label "인용 형식:">
+<!ENTITY zotero.bibliography.locale.label "Language:">
 <!ENTITY zotero.bibliography.outputMode "Output Mode:">
 <!ENTITY zotero.bibliography.bibliography "Bibliography">
 <!ENTITY zotero.bibliography.outputMethod "Output Method:">
@@ -185,9 +190,6 @@
 
 <!ENTITY zotero.citation.keepSorted.label "원본 정렬 유지">
 
-<!ENTITY zotero.citation.page "페이지">
-<!ENTITY zotero.citation.paragraph "단락">
-<!ENTITY zotero.citation.line "행">
 <!ENTITY zotero.citation.suppressAuthor.label "저자 숨기기">
 <!ENTITY zotero.citation.prefix.label "접두사:">
 <!ENTITY zotero.citation.suffix.label "접미사:">
@@ -284,3 +286,7 @@
 <!ENTITY zotero.downloadManager.label "Zotero로 저장">
 <!ENTITY zotero.downloadManager.saveToLibrary.description "첨부물을 현재 선택한 라이브러리에 저장할 수 없습니다. 그 대신 귀하의 라이브러리에 저장됩니다.">
 <!ENTITY zotero.downloadManager.noPDFTools.description "이 기능을 사용하려면, 먼저 Zotero 환경설정에서 PDF 도구를 인스톨해야 합니다.">
+
+<!ENTITY zotero.attachLink.title "Attach Link to URI">
+<!ENTITY zotero.attachLink.label.link "Link:">
+<!ENTITY zotero.attachLink.label.title "Title:">

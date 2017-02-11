@@ -188,7 +188,7 @@ Zotero.Translators = new function() {
 	 */
 	this.getAll = function() {
 		if(!_initialized) this.init();
-		return [translator for each(translator in _translators)];
+		return Object.keys(_translators).map(i => _translators[i]);
 	}
 	
 	/**
@@ -254,7 +254,7 @@ Zotero.Translators = new function() {
 						}
 					} else {
 						converterFunctions.push(new function() {
-							var re = new RegExp('^https?://(?:[^/]\\.)?'+Zotero.Utilities.quotemeta(properHosts[j-1]), "gi");
+							var re = new RegExp('^https?://(?:[^/]+\\.)?'+Zotero.Utilities.quotemeta(properHosts[j-1])+'(?=/)', "gi");
 							var proxyHost = proxyHosts[j-1].replace(/\$/g, "$$$$");
 							return function(uri) { return uri.replace(re, "$&."+proxyHost) };
 						});

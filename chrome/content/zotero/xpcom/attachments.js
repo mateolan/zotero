@@ -34,7 +34,6 @@ Zotero.Attachments = new function(){
 	this.linkFromFile = linkFromFile;
 	this.importSnapshotFromFile = importSnapshotFromFile;
 	this.importFromURL = importFromURL;
-	this.linkFromURL = linkFromURL;
 	this.linkFromDocument = linkFromDocument;
 	this.importFromDocument = importFromDocument;
 	this.createMissingAttachment = createMissingAttachment;
@@ -54,6 +53,10 @@ Zotero.Attachments = new function(){
 		
 		if (!file.isFile()) {
 			throw ("'" + file.leafName + "' must be a file in Zotero.Attachments.importFromFile()");
+		}
+		
+		if (file.leafName.endsWith(".lnk")) {
+			throw new Error("Cannot add Windows shortcut");
 		}
 		
 		Zotero.DB.beginTransaction();
@@ -166,7 +169,7 @@ Zotero.Attachments = new function(){
 			var storageDir = Zotero.getStorageDirectory();
 			var destDir = this.getStorageDirectory(itemID);
 			_moveOrphanedDirectory(destDir);
-			file.parent.copyTo(storageDir, destDir.leafName);
+			file.parent.copyToFollowingLinks(storageDir, destDir.leafName);
 			
 			// Point to copied file
 			var newFile = destDir.clone();
@@ -202,7 +205,7 @@ Zotero.Attachments = new function(){
 	
 	function importFromURL(url, sourceItemID, forceTitle, forceFileBaseName, parentCollectionIDs,
 			mimeType, libraryID, callback, cookieSandbox) {
-		Zotero.debug('Importing attachment from URL');
+		Zotero.debug('Importing attachment from URL ' + url);
 		
 		if (sourceItemID && parentCollectionIDs) {
 			var msg = "parentCollectionIDs is ignored when sourceItemID is set in Zotero.Attachments.importFromURL()";
@@ -308,7 +311,11 @@ Zotero.Attachments = new function(){
 							Zotero.Attachments.getPath(
 								file, Zotero.Attachments.LINK_MODE_IMPORTED_URL
 							);
+						var disabled = Zotero.Notifier.disable();
 						attachmentItem.save();
+						if (disabled) {
+							Zotero.Notifier.enable();
+						}
 						
 						Zotero.Notifier.trigger('add', 'item', itemID);
 						Zotero.Notifier.trigger('modify', 'item', sourceItemID);
@@ -348,17 +355,13 @@ Zotero.Attachments = new function(){
 				var nsIURL = Components.classes["@mozilla.org/network/standard-url;1"]
 							.createInstance(Components.interfaces.nsIURL);
 				nsIURL.spec = url;
-				try {
-					wbp.saveURI(nsIURL, null, null, null, null, file);
-				} catch(e if e.name === "NS_ERROR_XPC_NOT_ENOUGH_ARGS") {
-					// https://bugzilla.mozilla.org/show_bug.cgi?id=794602
-					// XXX Always use when we no longer support Firefox < 18
-					wbp.saveURI(nsIURL, null, null, null, null, file, null);
-				}
+				Zotero.Utilities.Internal.saveURI(wbp, nsIURL, file);
 				
 				return attachmentItem;
 			}
 			catch (e){
+				Zotero.debug(e, 1);
+				Components.utils.reportError(e);
 				Zotero.DB.rollbackTransaction();
 				
 				try {
@@ -399,38 +402,69 @@ Zotero.Attachments = new function(){
 	}
 	
 	
+	this.cleanAttachmentURI = function (uri, tryHttp) {
+		uri = uri.trim();
+		if (!uri) return false;
+		
+		var ios = Components.classes["@mozilla.org/network/io-service;1"]
+			.getService(Components.interfaces.nsIIOService);
+		try {
+			return ios.newURI(uri, null, null).spec // Valid URI if succeeds
+		} catch (e) {
+			if (e instanceof Components.Exception
+				&& e.result == Components.results.NS_ERROR_MALFORMED_URI
+			) {
+				if (tryHttp && /\w\.\w/.test(uri)) {
+					// Assume it's a URL missing "http://" part
+					try {
+						return ios.newURI('http://' + uri, null, null).spec;
+					} catch (e) {}
+				}
+				
+				Zotero.debug('cleanAttachmentURI: Invalid URI: ' + uri, 2);
+				return false;
+			}
+			throw e;
+		}
+	}
+	
+	
 	/*
 	 * Create a link attachment from a URL
 	 *
-	 * @param	{String}		url
+	 * @param	{String}		url Validated URI
 	 * @param	{Integer}		sourceItemID	Parent item
 	 * @param	{String}		[mimeType]		MIME type of page
 	 * @param	{String}		[title]			Title to use for attachment
 	 */
-	function linkFromURL(url, sourceItemID, mimeType, title){
-		Zotero.debug('Linking attachment from URL');
-	    
-		/* Throw error on invalid URLs
-		   We currently accept the following protocols:
-		   PersonalBrain (brain://)
-		   DevonThink (x-devonthink-item://)
-		   Notational Velocity (nv://)
-		   MyLife Organized (mlo://)
-		   Evernote (evernote://)
-		   OneNote (onenote://)
-		   Kindle (kindle://) 
-		   Logos (logosres:) 
-		   Zotero (zotero://) */
-
-		var urlRe = /^((https?|zotero|evernote|onenote|brain|nv|mlo|kindle|x-devonthink-item|ftp):\/\/|logosres:)[^\s]*$/;
-		var matches = urlRe.exec(url);
-		if (!matches) {
-			throw ("Invalid URL '" + url + "' in Zotero.Attachments.linkFromURL()");
-		}
+	this.linkFromURL = function (url, sourceItemID, mimeType, title) {
+		Zotero.debug('Linking attachment from ' + url);
 		
 		// If no title provided, figure it out from the URL
-		if (!title){
-			title = url.substring(url.lastIndexOf('/')+1);
+		// Web addresses with paths will be whittled to the last element
+		// excluding references and queries. All others are the full string
+		if (!title) {
+			var ioService = Components.classes["@mozilla.org/network/io-service;1"]
+				.getService(Components.interfaces.nsIIOService);
+			var titleURL = ioService.newURI(url, null, null);
+
+			if (titleURL.scheme == 'http' || titleURL.scheme == 'https') {
+				titleURL = titleURL.QueryInterface(Components.interfaces.nsIURL);
+				if (titleURL.path == '/') {
+					title = titleURL.host;
+				}
+				else if (titleURL.fileName) {
+					title = titleURL.fileName;
+				}
+				else {
+					var dir = titleURL.directory.split('/');
+					title = dir[dir.length - 2];
+				}
+			}
+			
+			if (!title) {
+				title = url;
+			}
 		}
 		
 		// Override MIME type to application/pdf if extension is .pdf --
@@ -445,7 +479,6 @@ Zotero.Attachments = new function(){
 			mimeType, null, sourceItemID);
 		return itemID;
 	}
-	
 	
 	// TODO: what if called on file:// document?
 	function linkFromDocument(document, sourceItemID, parentCollectionIDs){
@@ -515,7 +548,7 @@ Zotero.Attachments = new function(){
 			mimeType = "application/pdf";
 		}
 		
-		var charsetID = Zotero.CharacterSets.getID(document.characterSet);
+		var charsetID = Zotero.CharacterSets.getID('utf-8'); // WPD will output UTF-8
 		
 		if (!forceTitle) {
 			// Remove e.g. " - Scaled (-17%)" from end of images saved from links,
@@ -635,13 +668,7 @@ Zotero.Attachments = new function(){
 						throw (e);
 					}
 				});
-				try {
-					wbp.saveURI(nsIURL, null, null, null, null, file);
-				} catch(e if e.name === "NS_ERROR_XPC_NOT_ENOUGH_ARGS") {
-					// https://bugzilla.mozilla.org/show_bug.cgi?id=794602
-					// XXX Always use when we no longer support Firefox < 18
-					wbp.saveURI(nsIURL, null, null, null, null, file, null);
-				}
+				Zotero.Utilities.Internal.saveURI(wbp, nsIURL, file);
 			}
 			
 			// Add to collections
@@ -1043,6 +1070,11 @@ Zotero.Attachments = new function(){
 		catch (e) {
 			Zotero.debug(e, 1);
 			Components.utils.reportError(e);
+			return path;
+		}
+		
+		if (!baseDir.exists()) {
+			Zotero.debug("Base directory '" + baseDir.path + "' doesn't exist", 2);
 			return path;
 		}
 		

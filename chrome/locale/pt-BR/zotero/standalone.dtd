@@ -3,9 +3,9 @@
 <!ENTITY servicesMenuMac.label "Serviços">
 <!ENTITY hideThisAppCmdMac.label "Esconder &brandShortName;">
 <!ENTITY hideThisAppCmdMac.commandkey "H">
-<!ENTITY hideOtherAppsCmdMac.label "Esconder os outros">
+<!ENTITY hideOtherAppsCmdMac.label "Ocultar os outros">
 <!ENTITY hideOtherAppsCmdMac.commandkey "H">
-<!ENTITY showAllAppsCmdMac.label "Mostrar tudo">
+<!ENTITY showAllAppsCmdMac.label "Exibir tudo">
 <!ENTITY quitApplicationCmdMac.label "Sair do Zotero">
 <!ENTITY quitApplicationCmdMac.key "Q">
 
@@ -15,11 +15,11 @@
 <!ENTITY saveCmd.label "Salvar...">
 <!ENTITY saveCmd.key "S">
 <!ENTITY saveCmd.accesskey "A">
-<!ENTITY pageSetupCmd.label "Configurar página...">
+<!ENTITY pageSetupCmd.label "Configuração da página...">
 <!ENTITY pageSetupCmd.accesskey "U">
 <!ENTITY printCmd.label "Imprimir...">
 <!ENTITY printCmd.key "P">
-<!ENTITY printCmd.accesskey "U">
+<!ENTITY printCmd.accesskey "P">
 <!ENTITY closeCmd.label "Fechar">
 <!ENTITY closeCmd.key "W">
 <!ENTITY closeCmd.accesskey "C">
@@ -31,7 +31,7 @@
 
 <!ENTITY editMenu.label "Editar">
 <!ENTITY editMenu.accesskey "E">
-<!ENTITY undoCmd.label "Anular">
+<!ENTITY undoCmd.label "Desfazer">
 <!ENTITY undoCmd.key "Z">
 <!ENTITY undoCmd.accesskey "U">
 <!ENTITY redoCmd.label "Refazer">

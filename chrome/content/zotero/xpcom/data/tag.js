@@ -98,7 +98,7 @@ Zotero.Tag.prototype._set = function (field, val) {
 			return;
 		
 		case 'name':
-			val = Zotero.Utilities.trim(val);
+			val = Zotero.Utilities.trim(val).normalize();
 			break;
 	}
 	
@@ -224,7 +224,7 @@ Zotero.Tag.prototype.getLinkedItems = function (asIDs) {
 	}
 	
 	// Return Zotero.Item objects
-	return [item for each(item in this._linkedItems)];
+	return Object.keys(this._linkedItems).map(id => this._linkedItems[id]);
 }
 
 

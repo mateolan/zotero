@@ -6,9 +6,11 @@
 <!ENTITY zotero.general.delete "Izbriši">
 <!ENTITY zotero.general.ok "V redu">
 <!ENTITY zotero.general.cancel "Prekliči">
+<!ENTITY zotero.general.refresh "Osveži">
+<!ENTITY zotero.general.saveAs "Shrani kot ...">
 
 <!ENTITY zotero.errorReport.title "Poročilo o napaki Zotero">
-<!ENTITY zotero.errorReport.unrelatedMessages "Zapisnik napak lahko vključuje sporočila, ki se ne nanašajo na Zotero.">
+<!ENTITY zotero.errorReport.unrelatedMessages "Vključuje lahko sporočila, ki se ne nanašajo na Zotero.">
 <!ENTITY zotero.errorReport.submissionInProgress "Počakajte, da je poročilo o napaki oddano.">
 <!ENTITY zotero.errorReport.submitted "Poročilo o napaki je bilo oddano.">
 <!ENTITY zotero.errorReport.reportID "ID poročila:">
@@ -45,7 +47,7 @@
 <!ENTITY zotero.collections.showUnfiledItems "Pokaži nerazvrščene vnose">
 
 <!ENTITY zotero.items.itemType "Vrsta vnosa">
-<!ENTITY zotero.items.type_column "Item Type">
+<!ENTITY zotero.items.type_column "Vrsta vnosa">
 <!ENTITY zotero.items.title_column "Naslov">
 <!ENTITY zotero.items.creator_column "Ustvaril">
 <!ENTITY zotero.items.date_column "Datum">
@@ -123,7 +125,9 @@
 <!ENTITY zotero.item.textTransform "Preoblikuj besedilo">
 <!ENTITY zotero.item.textTransform.titlecase "Velike Začetnice">
 <!ENTITY zotero.item.textTransform.sentencecase "Kot v stavku">
-<!ENTITY zotero.item.creatorTransform.nameSwap "Zamenjaj imena in priimke">
+<!ENTITY zotero.item.creatorTransform.nameSwap "Zamenjaj ime/priimek">
+<!ENTITY zotero.item.viewOnline "Pokaži na spletu">
+<!ENTITY zotero.item.copyAsURL "Kopiraj kot URL">
 
 <!ENTITY zotero.toolbar.newNote "Nova opomba">
 <!ENTITY zotero.toolbar.note.standalone "Nova samostojna opomba">
@@ -161,6 +165,7 @@
 
 <!ENTITY zotero.bibliography.title "Ustvari bibliografijo">
 <!ENTITY zotero.bibliography.style.label "Slog navajanja:">
+<!ENTITY zotero.bibliography.locale.label "Jezik:">
 <!ENTITY zotero.bibliography.outputMode "Izhodni način:">
 <!ENTITY zotero.bibliography.bibliography "Bibliografija">
 <!ENTITY zotero.bibliography.outputMethod "Izhodna metoda:">
@@ -185,9 +190,6 @@
 
 <!ENTITY zotero.citation.keepSorted.label "Obdrži vire razvrščene">
 
-<!ENTITY zotero.citation.page "Stran">
-<!ENTITY zotero.citation.paragraph "Odstavek">
-<!ENTITY zotero.citation.line "Vrstica">
 <!ENTITY zotero.citation.suppressAuthor.label "Prikrij avtorja">
 <!ENTITY zotero.citation.prefix.label "Predpona:">
 <!ENTITY zotero.citation.suffix.label "Pripona:">
@@ -284,3 +286,7 @@
 <!ENTITY zotero.downloadManager.label "Shrani na Zotero">
 <!ENTITY zotero.downloadManager.saveToLibrary.description "V trenutno izbrano knjižnico priponk ni mogoče shraniti. Vnos bo namesto tega shranjen v vašo knjižnico.">
 <!ENTITY zotero.downloadManager.noPDFTools.description "Če želite uporabiti to funkcijo, morate najprej namestiti orodja PDF v nastavitvah Zotera.">
+
+<!ENTITY zotero.attachLink.title "URI pripni povezavo">
+<!ENTITY zotero.attachLink.label.link "Povezava:">
+<!ENTITY zotero.attachLink.label.title "Naslov:">

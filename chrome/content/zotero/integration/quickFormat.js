@@ -51,7 +51,9 @@ var Zotero_QuickFormat = new function () {
 			io = window.arguments[0].wrappedJSObject;
 			
 			// Only hide chrome on Windows or Mac
-			if(Zotero.isMac || Zotero.isWin) {
+			if(Zotero.isMac) {
+				document.documentElement.setAttribute("drawintitlebar", true);
+			} else if(Zotero.isWin) {
 				document.documentElement.setAttribute("hidechrome", true);
 			}
 			
@@ -78,9 +80,8 @@ var Zotero_QuickFormat = new function () {
 			var locators = Zotero.Cite.labels;
 			var menu = document.getElementById("locator-label");
 			var labelList = document.getElementById("locator-label-popup");
-			for each(var locator in locators) {
-				// TODO localize
-				var locatorLabel = locator[0].toUpperCase()+locator.substr(1);
+			for(var locator of locators) {
+				var locatorLabel = Zotero.getString('citation.locator.'+locator.replace(/\s/g,''));
 				
 				// add to list of labels
 				var child = document.createElement("menuitem");
@@ -226,7 +227,7 @@ var Zotero_QuickFormat = new function () {
 			var prevNode = node.previousSibling;
 			if(prevNode && prevNode.citationItem && prevNode.citationItem.locator) {
 				prevNode.citationItem.locator += str;
-				prevNode.value = _buildBubbleString(prevNode.citationItem);
+				prevNode.textContent = _buildBubbleString(prevNode.citationItem);
 				node.nodeValue = "";
 				_clearEntryList();
 				return;
@@ -243,7 +244,7 @@ var Zotero_QuickFormat = new function () {
 					var prevNode = node.previousSibling;
 					if(prevNode && prevNode.citationItem) {
 						prevNode.citationItem.locator = m[2];
-						prevNode.value = _buildBubbleString(prevNode.citationItem);
+						prevNode.textContent = _buildBubbleString(prevNode.citationItem);
 						node.nodeValue = "";
 						_clearEntryList();
 						return;
@@ -266,7 +267,7 @@ var Zotero_QuickFormat = new function () {
 			if(year) str += " "+year;
 			
 			var s = new Zotero.Search();
-			str = str.replace(" & ", " ", "g").replace(" and ", " ", "g");
+			str = str.replace(/ (?:&|and) /g, " ", "g");
 			if(charRe.test(str)) {
 				Zotero.debug("QuickFormat: QuickSearch: "+str);
 				s.addCondition("quicksearch-titleCreatorYear", "contains", str);
@@ -302,9 +303,11 @@ var Zotero_QuickFormat = new function () {
 						citedItemsMatchingSearch = [];
 					for(var i=0, iCount=citedItems.length; i<iCount; i++) {
 						// Generate a string to search for each item
-						var item = citedItems[i],
-							itemStr = [creator.ref.firstName+" "+creator.ref.lastName for each(creator in item.getCreators())];
-						itemStr = itemStr.concat([item.getField("title"), item.getField("date", true, true).substr(0, 4)]).join(" ");
+						let item = citedItems[i];
+						let itemStr = item.getCreators()
+							.map(creator => creator.ref.firstName + " " + creator.ref.lastName)
+							.concat([item.getField("title"), item.getField("date", true, true).substr(0, 4)])
+							.join(" ");
 						
 						// See if words match
 						for(var j=0, jCount=splits.length; j<jCount; j++) {
@@ -318,21 +321,21 @@ var Zotero_QuickFormat = new function () {
 					Zotero.debug("Searched cited items");
 				}
 				
-				_updateItemList(citedItems, citedItemsMatchingSearch, searchResultIDs, isAsync);
+				_updateItemList(citedItems, citedItemsMatchingSearch, str, searchResultIDs, isAsync);
 			}).done();
 			
 			if(!completed) {
 				// We are going to have to wait until items have been retrieved from the document.
 				// Until then, show item list without cited items.
 				Zotero.debug("Getting cited items asynchronously");
-				_updateItemList(false, false, searchResultIDs);
+				_updateItemList(false, false, str, searchResultIDs);
 				isAsync = true;
 			} else {
 				Zotero.debug("Got cited items synchronously");
 			}
 		} else {
 			// No search conditions, so just clear the box
-			_updateItemList([], [], []);
+			_updateItemList([], [], "", []);
 		}
 	}
 	
@@ -353,7 +356,7 @@ var Zotero_QuickFormat = new function () {
 	/**
 	 * Updates the item list
 	 */
-	function _updateItemList(citedItems, citedItemsMatchingSearch, searchResultIDs, preserveSelection) {
+	function _updateItemList(citedItems, citedItemsMatchingSearch, searchString, searchResultIDs, preserveSelection) {
 		var selectedIndex = 1, previousItemID;
 		
 		// Do this so we can preserve the selected item after cited items have been loaded
@@ -396,7 +399,7 @@ var Zotero_QuickFormat = new function () {
 		// Also take into account items cited in this citation. This means that the sorting isn't
 		// exactly by # of items cited from each library, but maybe it's better this way.
 		_updateCitationObject();
-		for each(var citationItem in io.citation.citationItems) {
+		for(var citationItem of io.citation.citationItems) {
 			var citedItem = Zotero.Cite.getItem(citationItem.id);
 			if(!citedItem.cslItemID) {
 				var libraryID = citedItem.libraryID ? citedItem.libraryID : 0;
@@ -411,7 +414,25 @@ var Zotero_QuickFormat = new function () {
 		if(searchResultIDs.length && (!citedItemsMatchingSearch || citedItemsMatchingSearch.length < 50)) {
 			var items = Zotero.Items.get(searchResultIDs);
 			
+			searchString = searchString.toLowerCase();
+			var collation = Zotero.getLocaleCollation();
+			
 			items.sort(function _itemSort(a, b) {
+				var firstCreatorA = a.firstCreator, firstCreatorB = b.firstCreator;
+				
+				// Favor left-bound name matches (e.g., "Baum" < "Appelbaum"),
+				// using last name of first author
+				if (firstCreatorA && firstCreatorB) {
+					let caStartsWith = firstCreatorA.toLowerCase().indexOf(searchString) == 0;
+					let cbStartsWith = firstCreatorB.toLowerCase().indexOf(searchString) == 0;
+					if (caStartsWith && !cbStartsWith) {
+						return -1;
+					}
+					else if (!caStartsWith && cbStartsWith) {
+						return 1;
+					}
+				}
+				
 				var libA = a.libraryID ? a.libraryID : 0, libB = b.libraryID ? b.libraryID : 0;
 				if(libA !== libB) {
 					// Sort by number of cites for library
@@ -430,12 +451,12 @@ var Zotero_QuickFormat = new function () {
 				}
 			
 				// Sort by last name of first author
-				var creatorsA = a.getCreators(), creatorsB = b.getCreators(),
-					caExists = creatorsA.length ? 1 : 0, cbExists = creatorsB.length ? 1 : 0;
-				if(caExists !== cbExists) {
-					return cbExists-caExists;
-				} else if(caExists) {
-					return creatorsA[0].ref.lastName.localeCompare(creatorsB[0].ref.lastName);
+				if (firstCreatorA !== "" && firstCreatorB === "") {
+					return -1;
+				} else if (firstCreatorA === "" && firstCreatorB !== "") {
+					return 1
+				} else if (firstCreatorA) {
+					return collation.compareString(1, firstCreatorA, firstCreatorB);
 				}
 				
 				// Sort by date
@@ -739,7 +760,7 @@ var Zotero_QuickFormat = new function () {
 		if(qfe.scrollHeight > 30) {
 			qfe.setAttribute("multiline", true);
 			qfs.setAttribute("multiline", true);
-			qfs.style.height = (4+qfe.scrollHeight)+"px";
+			qfs.style.height = ((Zotero.isMac ? 6 : 4)+qfe.scrollHeight)+"px";
 			window.sizeToContent();
 		} else {
 			delete qfs.style.height;
@@ -767,7 +788,7 @@ var Zotero_QuickFormat = new function () {
 			if(!panelFrameHeight) {
 				panelFrameHeight = referencePanel.boxObject.height - referencePanel.clientHeight;
 				var computedStyle = window.getComputedStyle(referenceBox, null);
-				for each(var attr in ["border-top-width", "border-bottom-width"]) {
+				for(var attr of ["border-top-width", "border-bottom-width"]) {
 					var val = computedStyle.getPropertyValue(attr);
 					if(val) {
 						var m = pixelRe.exec(val);
@@ -922,7 +943,7 @@ var Zotero_QuickFormat = new function () {
 		if(item.id) {
 			var libraryName = item.libraryID ? Zotero.Libraries.getName(item.libraryID)
 							: Zotero.getString('pane.collections.library');
-			panelLibraryLink.textContent = Zotero.getString("integration.openInLibrary", libraryName);
+			panelLibraryLink.label = Zotero.getString("integration.openInLibrary", libraryName);
 		}
 
 		target.setAttribute("selected", "true");
@@ -1029,6 +1050,12 @@ var Zotero_QuickFormat = new function () {
 	 * Handle return or escape
 	 */
 	function _onQuickSearchKeyPress(event) {
+		// Prevent hang if another key is pressed after Enter
+		// https://forums.zotero.org/discussion/59157/
+		if (accepted) {
+			event.preventDefault();
+			return;
+		}
 		if(qfGuidance) qfGuidance.hide();
 		
 		var keyCode = event.keyCode;
@@ -1065,7 +1092,7 @@ var Zotero_QuickFormat = new function () {
 				selection.addRange(nodeRange);
 			}
 
-		} else if(keyCode === event.DOM_VK_UP) {
+		} else if(keyCode === event.DOM_VK_UP && referencePanel.state === "open") {
 			var selectedItem = referenceBox.selectedItem;
 
 			var previousSibling;
@@ -1085,8 +1112,8 @@ var Zotero_QuickFormat = new function () {
 					visibleItem = visibleItem.previousSibling;
 				}
 				referenceBox.ensureElementIsVisible(visibleItem);
-				event.preventDefault();
 			};
+			event.preventDefault();
 		} else if(keyCode === event.DOM_VK_DOWN) {
 			if((Zotero.isMac ? event.metaKey : event.ctrlKey)) {
 				// If meta key is held down, show the citation properties panel
@@ -1094,7 +1121,7 @@ var Zotero_QuickFormat = new function () {
 
 				if(bubble) _showCitationProperties(bubble);
 				event.preventDefault();
-			} else {
+			} else if (referencePanel.state === "open") {
 				var selectedItem = referenceBox.selectedItem;
 				var nextSibling;
 				
@@ -1107,8 +1134,8 @@ var Zotero_QuickFormat = new function () {
 				if(nextSibling){
 					referenceBox.selectedItem = nextSibling;
 					referenceBox.ensureElementIsVisible(nextSibling);
-					event.preventDefault();
 				};
+				event.preventDefault();
 			}
 		} else {
 			_resetSearchTimer();
@@ -1218,7 +1245,7 @@ var Zotero_QuickFormat = new function () {
 		} else {
 			delete panelRefersToBubble.citationItem["suppress-author"];
 		}
-		panelRefersToBubble.value = _buildBubbleString(panelRefersToBubble.citationItem);
+		panelRefersToBubble.textContent = _buildBubbleString(panelRefersToBubble.citationItem);
 	};
 	
 	/**

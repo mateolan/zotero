@@ -413,6 +413,13 @@
 								label.setAttribute("isButton", true);
 								label.setAttribute("onclick", "ZoteroPane_Local.loadURI('" + doi + "', event)");
 								label.setAttribute("tooltiptext", Zotero.getString('locate.online.tooltip'));
+								valueElement.setAttribute('contextmenu', 'zotero-doi-menu');
+								
+								var openURLMenuItem = document.getElementById('zotero-doi-menu-view-online');
+								openURLMenuItem.setAttribute("oncommand", "ZoteroPane_Local.loadURI('" + doi + "', event)");
+								
+								var copyMenuItem = document.getElementById('zotero-doi-menu-copy');
+								copyMenuItem.setAttribute("oncommand", "Zotero.Utilities.Internal.copyTextToClipboard('" + doi + "')");
 							}
 						}
 						else if (fieldName == 'abstractNote') {
@@ -1027,7 +1034,9 @@
 				<body>
 				<![CDATA[
 					var sbo = document.getAnonymousNodes(this)[0].boxObject;
-					sbo.QueryInterface(Components.interfaces.nsIScrollBoxObject);
+					if (Zotero.platformMajorVersion < 36) {
+						sbo.QueryInterface(Components.interfaces.nsIScrollBoxObject);
+					}
 					sbo.ensureElementIsVisible(elem);
 				]]>
 				</body>
@@ -1366,6 +1375,12 @@
 						this._dynamicFields.focus();
 					}
 					
+					// In Firefox 45, when clicking a multiline field such as Extra, the event is
+					// triggered on the inner 'description' element instead of the 'vbox'.
+					if (elem.tagName == 'description') {
+						elem = elem.parentNode;
+					}
+					
 					Zotero.debug('Showing editor');
 					
 					var fieldName = elem.getAttribute('fieldname');
@@ -1447,7 +1462,11 @@
 									params.creatorTypeID = creatorTypeID;
 								}
 								
+								// Return
 								t.setAttribute('ontextentered',
+									'document.getBindingParent(this).handleCreatorAutoCompleteSelect(this, true)');
+								// Tab/Shift-Tab
+								t.setAttribute('onchange',
 									'document.getBindingParent(this).handleCreatorAutoCompleteSelect(this)');
 							};
 							t.setAttribute(
@@ -1467,9 +1486,24 @@
 					
 					t.select();
 					
+					// Leave text field open when window loses focus
+					var ignoreBlur = function () {
+						this.ignoreBlur = true;
+					}.bind(this);
+					var unignoreBlur = function () {
+						this.ignoreBlur = false;
+					}.bind(this);
+					addEventListener("deactivate", ignoreBlur);
+					addEventListener("activate", unignoreBlur);
+					
 					t.addEventListener('blur', function () {
-						document.getBindingParent(this).blurHandler(this);
-					}, false);
+						var self = document.getBindingParent(this);
+						if (self.ignoreBlur) return;
+						
+						removeEventListener("deactivate", ignoreBlur);
+						removeEventListener("activate", unignoreBlur);
+						self.blurHandler(this);
+					});
 					t.setAttribute('onkeypress', "return document.getBindingParent(this).handleKeyPress(event)");
 					
 					this._tabDirection = false;
@@ -1487,6 +1521,7 @@
 			-->
 			<method name="handleCreatorAutoCompleteSelect">
 				<parameter name="textbox"/>
+				<parameter name="stayFocused"/>
 				<body>
 				<![CDATA[
 					var comment = false;
@@ -1514,9 +1549,10 @@
 						var [field, creatorIndex, creatorField] =
 							textbox.getAttribute('fieldname').split('-');
 						
-						// Stay focused
-						this._lastTabIndex = parseInt(textbox.getAttribute('ztabindex')) - 1;
-						this._tabDirection = 1;
+						if (stayFocused) {
+							this._lastTabIndex = parseInt(textbox.getAttribute('ztabindex')) - 1;
+							this._tabDirection = 1;
+						}
 						
 						var creator = Zotero.Creators.get(creatorID);
 						
@@ -1705,7 +1741,7 @@
 							this._addCreatorRow = false;
 							
 							//Filter out bad names
-							var nameArray = [tempName for each(tempName in rawNameArray) if(tempName)];
+							var nameArray = rawNameArray.filter(name => name);
 							
 							//If not adding names at the end of the creator list, make new creator 
 							//entries and then shift down existing creators.
@@ -1850,10 +1886,14 @@
 					if(field === 'creator') {
 						// Reset creator mode settings here so that flex attribute gets reset
 						this.switchCreatorMode(row, (otherFields.fieldMode ? 1 : 0), true);
-						
+						Zotero.debug("HERE");
 						if(Zotero.ItemTypes.getName(this.item.itemTypeID) === "bookSection") {
+						Zotero.debug("YES");
 							var creatorTypeLabels = document.getAnonymousNodes(this)[0].getElementsByClassName("creator-type-label");
-							document.getElementById("zotero-author-guidance").show(creatorTypeLabels[creatorTypeLabels.length-1]);
+							Zotero.debug(creatorTypeLabels[creatorTypeLabels.length-1] + "");
+							document.getElementById("zotero-author-guidance").show({
+								forEl: creatorTypeLabels[creatorTypeLabels.length-1]
+							});
 						}
 					}
 					
@@ -2461,6 +2501,10 @@
 							return !hideTransforms;">
 						<menuitem label="&zotero.item.creatorTransform.nameSwap;"
 							oncommand="document.getBindingParent(this).swapNames();"/>
+					</menupopup>
+					<menupopup id="zotero-doi-menu">
+						<menuitem id="zotero-doi-menu-view-online" label="&zotero.item.viewOnline;"/>
+						<menuitem id="zotero-doi-menu-copy" label="&zotero.item.copyAsURL;"/>
 					</menupopup>
 					<zoteroguidancepanel id="zotero-author-guidance" about="authorMenu" position="after_end" x="-25"/>
 				</popupset>

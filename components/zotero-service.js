@@ -46,6 +46,7 @@ const xpcomFilesAll = [
 	'translation/translate_firefox',
 	'translation/tlds',
 	'utilities',
+	'isbn',
 	'utilities_internal',
 	'utilities_translate'
 ];
@@ -176,6 +177,21 @@ ZoteroContext.prototype = {
 		}
 		
 		return zContext;
+	},
+
+	/**
+	 * Shuts down Zotero, calls a callback (that may return a promise),
+	 * then reinitializes Zotero. Returns a promise that is resolved
+	 * when this process completes.
+	 */
+	"reinit":function(cb, isConnector) {
+		Services.obs.notifyObservers(zContext.Zotero, "zotero-before-reload", isConnector ? "connector" : "full");
+		return zContext.Zotero.shutdown().then(function() {
+			return cb ? cb() : false;
+		}).finally(function() {
+			makeZoteroContext(isConnector);
+			zContext.Zotero.init(zInitOptions);
+		});
 	}
 };
 
@@ -208,6 +224,7 @@ function makeZoteroContext(isConnector) {
 	
 	// Load CiteProc into Zotero.CiteProc namespace
 	zContext.Zotero.CiteProc = {"Zotero":zContext.Zotero};
+	subscriptLoader.loadSubScript("chrome://zotero/content/xpcom/citeproc-prereqs.js", zContext.Zotero.CiteProc);
 	subscriptLoader.loadSubScript("chrome://zotero/content/xpcom/citeproc.js", zContext.Zotero.CiteProc);
 	
 	// Load XRegExp object into Zotero.XRegExp
@@ -275,9 +292,6 @@ function makeZoteroContext(isConnector) {
 		subscriptLoader.loadSubScript("chrome://zotero/content/xpcom/standalone.js", zContext);
 	}
 	
-	// load nsTransferable (query: do we still use this?)
-	subscriptLoader.loadSubScript("chrome://global/content/nsTransferable.js", zContext);
-	
 	// add connector-related properties
 	zContext.Zotero.isConnector = isConnector;
 	zContext.Zotero.instanceID = instanceID;
@@ -312,8 +326,10 @@ function ZoteroService() {
 		
 		zContext.Zotero.debug("Initialized in "+(Date.now() - start)+" ms");
 	} catch(e) {
-		var msg = typeof e == 'string' ? e : e.name;
-		dump(e + "\n\n");
+		var msg = e instanceof Error
+			? e.name + ': ' + e.message + '\n' + e.fileName + ':' + e.lineNumber + '\n' + e.stack
+			: '' + e;
+		dump(msg + '\n');
 		Components.utils.reportError(e);
 		throw e;
 	}
@@ -348,7 +364,7 @@ ZoteroCommandLineHandler.prototype = {
 	/* nsICommandLineHandler */
 	handle : function(cmdLine) {
 		// Force debug output
-		if (cmdLine.handleFlag("zoterodebug", false)) {
+		if (cmdLine.handleFlag("ZoteroDebug", false)) {
 			zInitOptions.forceDebugLog = true;
 		}
 		
@@ -430,6 +446,10 @@ ZoteroCommandLineHandler.prototype = {
 					}
 				}
 			}
+		}
+		
+		if (cmdLine.handleFlag("ZoteroNoUserInput", false)) {
+			zInitOptions.noUserInput = true;
 		}
 	},
 	

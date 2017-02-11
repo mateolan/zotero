@@ -31,7 +31,7 @@ Zotero.Sync.Storage.WebDAV = (function () {
 	var _cachedCredentials = false;
 	
 	var _loginManagerHost = 'chrome://zotero';
-	var _loginManagerURL = 'Zotero Storage Server';
+	var _loginManagerRealm = 'Zotero Storage Server';
 	
 	var _lastSyncIDLength = 30;
 	
@@ -699,11 +699,20 @@ Zotero.Sync.Storage.WebDAV = (function () {
 			Zotero.debug('Getting WebDAV password');
 			var loginManager = Components.classes["@mozilla.org/login-manager;1"]
 									.getService(Components.interfaces.nsILoginManager);
-			var logins = loginManager.findLogins({}, _loginManagerHost, _loginManagerURL, null);
 			
+			var logins = loginManager.findLogins({}, _loginManagerHost, null, _loginManagerRealm);
 			// Find user from returned array of nsILoginInfo objects
 			for (var i = 0; i < logins.length; i++) {
 				if (logins[i].username == username) {
+					return logins[i].password;
+				}
+			}
+			
+			// Pre-4.0.28.5 format, broken for findLogins and removeLogin in Fx41
+			logins = loginManager.findLogins({}, "chrome://zotero", "", null);
+			for (var i = 0; i < logins.length; i++) {
+				if (logins[i].username == username
+						&& logins[i].formSubmitURL == "Zotero Storage Server") {
 					return logins[i].password;
 				}
 			}
@@ -722,20 +731,36 @@ Zotero.Sync.Storage.WebDAV = (function () {
 			
 			var loginManager = Components.classes["@mozilla.org/login-manager;1"]
 									.getService(Components.interfaces.nsILoginManager);
-			var logins = loginManager.findLogins({}, _loginManagerHost, _loginManagerURL, null);
-			
+			var logins = loginManager.findLogins({}, _loginManagerHost, null, _loginManagerRealm);
 			for (var i = 0; i < logins.length; i++) {
 				Zotero.debug('Clearing WebDAV passwords');
-				loginManager.removeLogin(logins[i]);
+				if (logins[i].httpRealm == _loginManagerRealm) {
+					loginManager.removeLogin(logins[i]);
+				}
+				break;
+			}
+			
+			// Pre-4.0.28.5 format, broken for findLogins and removeLogin in Fx41
+			logins = loginManager.findLogins({}, _loginManagerHost, "", null);
+			for (var i = 0; i < logins.length; i++) {
+				Zotero.debug('Clearing old WebDAV passwords');
+				if (logins[i].formSubmitURL == "Zotero Storage Server") {
+					try {
+						loginManager.removeLogin(logins[i]);
+					}
+					catch (e) {
+						Zotero.logError(e);
+					}
+				}
 				break;
 			}
 			
 			if (password) {
-				Zotero.debug(_loginManagerURL);
+				Zotero.debug('Setting WebDAV password');
 				var nsLoginInfo = new Components.Constructor("@mozilla.org/login-manager/loginInfo;1",
 					Components.interfaces.nsILoginInfo, "init");
-				var loginInfo = new nsLoginInfo(_loginManagerHost, _loginManagerURL,
-					null, username, password, "", "");
+				var loginInfo = new nsLoginInfo(_loginManagerHost, null,
+					_loginManagerRealm, username, password, "", "");
 				loginManager.addLogin(loginInfo);
 			}
 		}
@@ -853,15 +878,25 @@ Zotero.Sync.Storage.WebDAV = (function () {
 					return false;
 				}
 				
+				var file = item.getFile();
+				
 				if (!mdate) {
 					Zotero.debug("Remote file not found for item " + Zotero.Items.getLibraryKeyHash(item));
+					// Reset sync state if a remotely missing file exists locally.
+					// I'm not sure how this can happen, but otherwise it results in
+					// a file marked as TO_DOWNLOAD never being uploaded.
+					if (file && file.exists()) {
+						Zotero.Sync.Storage.setSyncState(item.id, Zotero.Sync.Storage.SYNC_STATE_TO_UPLOAD);
+						return {
+							localChanges: true
+						};
+					}
 					return false;
 				}
 				
 				var syncModTime = mdate.getTime();
 				
 				// Skip download if local file exists and matches mod time
-				var file = item.getFile();
 				if (file && file.exists() && syncModTime == file.lastModifiedTime) {
 					Zotero.debug("File mod time matches remote file -- skipping download");
 					
@@ -963,13 +998,7 @@ Zotero.Sync.Storage.WebDAV = (function () {
 					.createInstance(nsIWBP);
 				wbp.persistFlags = nsIWBP.PERSIST_FLAGS_BYPASS_CACHE;
 				wbp.progressListener = listener;
-				try {
-					wbp.saveURI(uri, null, null, null, null, destFile);
-				} catch(e if e.name === "NS_ERROR_XPC_NOT_ENOUGH_ARGS") {
-					// https://bugzilla.mozilla.org/show_bug.cgi?id=794602
-					// XXX Always use when we no longer support Firefox < 18
-					wbp.saveURI(uri, null, null, null, null, destFile, null);
-				}
+				Zotero.Utilities.Internal.saveURI(wbp, uri, destFile);
 				
 				return deferred.promise;
 			});

@@ -821,134 +821,6 @@ Zotero.Sync.Storage = new function () {
 			var numItems = items.length;
 			var updatedStates = {};
 			
-			// OS.File didn't work reliably before Firefox 23, and on Windows it returns
-			// the access time instead of the modification time until Firefox 24
-			// (https://bugzilla.mozilla.org/show_bug.cgi?id=899436),
-			// so use the old code
-			if (Zotero.platformMajorVersion < 23
-					|| (Zotero.isWin && Zotero.platformMajorVersion < 24)) {
-				Zotero.debug("Performing synchronous file update check");
-				
-				for each(var item in items) {
-					// Spin the event loop during synchronous file access
-					yield Q.delay(1);
-					
-					//Zotero.debug("Memory usage: " + memmgr.resident);
-					
-					let row = attachmentData[item.id];
-					let lk = item.libraryID + "/" + item.key;
-					//Zotero.debug("Checking attachment file for item " + lk);
-					
-					var file = item.getFile(row);
-					if (!file) {
-						Zotero.debug("Marking attachment " + lk + " as missing");
-						updatedStates[item.id] = Zotero.Sync.Storage.SYNC_STATE_TO_DOWNLOAD;
-						continue;
-					}
-					
-					// If file is already marked for upload, skip check. Even if this
-					// is download-marking mode (itemModTimes) and the file was
-					// changed remotely, conflicts are checked at upload time, so we
-					// don't need to worry about it here.
-					if (row.state == Zotero.Sync.Storage.SYNC_STATE_TO_UPLOAD) {
-						continue;
-					}
-					
-					var fmtime = item.attachmentModificationTime;
-					
-					//Zotero.debug("Stored mtime is " + row.mtime);
-					//Zotero.debug("File mtime is " + fmtime);
-					
-					// Download-marking mode
-					if (itemModTimes) {
-						Zotero.debug("Remote mod time for item " + lk + " is " + itemModTimes[item.id]);
-						
-						// Ignore attachments whose stored mod times haven't changed
-						if (row.storageModTime == itemModTimes[id]) {
-							Zotero.debug("Storage mod time (" + row.storageModTime + ") "
-								+ "hasn't changed for item " + lk);
-							continue;
-						}
-						
-						Zotero.debug("Marking attachment " + lk + " for download");
-						updatedStates[item.id] = Zotero.Sync.Storage.SYNC_STATE_FORCE_DOWNLOAD;
-					}
-					
-					var mtime = row.mtime;
-					
-					// If stored time matches file, it hasn't changed locally
-					if (mtime == fmtime) {
-						continue;
-					}
-					
-					// Allow floored timestamps for filesystems that don't support
-					// millisecond precision (e.g., HFS+)
-					if (Math.floor(mtime / 1000) * 1000 == fmtime || Math.floor(fmtime / 1000) * 1000 == mtime) {
-						Zotero.debug("File mod times are within one-second precision "
-							+ "(" + fmtime + " ≅ " + mtime + ") for " + file.leafName
-							+ " for item " + lk + " -- ignoring");
-						continue;
-					}
-					
-					// Allow timestamp to be exactly one hour off to get around
-					// time zone issues -- there may be a proper way to fix this
-					if (Math.abs(fmtime - mtime) == 3600000
-							// And check with one-second precision as well
-							|| Math.abs(fmtime - Math.floor(mtime / 1000) * 1000) == 3600000
-							|| Math.abs(Math.floor(fmtime / 1000) * 1000 - mtime) == 3600000) {
-						Zotero.debug("File mod time (" + fmtime + ") is exactly one "
-							+ "hour off remote file (" + mtime + ") for item " + lk
-							+ "-- assuming time zone issue and skipping upload");
-						continue;
-					}
-					
-					// If file hash matches stored hash, only the mod time changed, so skip
-					var f = item.getFile();
-					if (f) {
-						Zotero.debug(f.path);
-					}
-					else {
-						Zotero.debug("File for item " + lk + " missing before getting hash");
-					}
-					var fileHash = item.attachmentHash;
-					if (row.hash && row.hash == fileHash) {
-						Zotero.debug("Mod time didn't match (" + fmtime + "!=" + mtime + ") "
-							+ "but hash did for " + file.leafName + " for item " + lk
-							+ " -- updating file mod time");
-						try {
-							file.lastModifiedTime = row.mtime;
-						}
-						catch (e) {
-							Zotero.File.checkFileAccessError(e, file, 'update');
-						}
-						continue;
-					}
-					
-					// Mark file for upload
-					Zotero.debug("Marking attachment " + lk + " as changed "
-						+ "(" + mtime + " != " + fmtime + ")");
-					updatedStates[item.id] = Zotero.Sync.Storage.SYNC_STATE_TO_UPLOAD;
-				}
-				
-				for (var itemID in updatedStates) {
-					Zotero.Sync.Storage.setSyncState(itemID, updatedStates[itemID]);
-					changed = true;
-				}
-				
-				if (!changed) {
-					Zotero.debug("No synced files have changed locally");
-				}
-				
-				let msg = "Checked " + numItems + " files in ";
-				if (libraryID !== false) {
-					msg += "library " + libraryID + " in ";
-				}
-				msg += (new Date() - t) + "ms";
-				Zotero.debug(msg);
-				
-				throw new Task.Result(changed);
-			}
-			
 			Components.utils.import("resource://gre/modules/osfile.jsm");
 			
 			let checkItems = function () {
@@ -991,6 +863,7 @@ Zotero.Sync.Storage = new function () {
 							return;
 						}
 						
+						var mtime = row.mtime;
 						//Zotero.debug("Stored mtime is " + row.mtime);
 						//Zotero.debug("File mtime is " + fmtime);
 						
@@ -999,17 +872,16 @@ Zotero.Sync.Storage = new function () {
 							Zotero.debug("Remote mod time for item " + lk + " is " + itemModTimes[item.id]);
 							
 							// Ignore attachments whose stored mod times haven't changed
-							if (row.storageModTime == itemModTimes[id]) {
-								Zotero.debug("Storage mod time (" + row.storageModTime + ") "
+							if (mtime == itemModTimes[item.id]) {
+								Zotero.debug("Storage mod time (" + mtime + ") "
 									+ "hasn't changed for item " + lk);
 								return;
 							}
 							
-							Zotero.debug("Marking attachment " + lk + " for download");
+							Zotero.debug("Marking attachment " + lk + " for download "
+								+ "(stored mtime: " + itemModTimes[item.id] + ")");
 							updatedStates[item.id] = Zotero.Sync.Storage.SYNC_STATE_FORCE_DOWNLOAD;
 						}
-						
-						var mtime = row.mtime;
 						
 						// If stored time matches file, it hasn't changed locally
 						if (mtime == fmtime) {
@@ -1077,7 +949,9 @@ Zotero.Sync.Storage = new function () {
 							// This can happen if a path is too long on Windows,
 							// e.g. a file is being accessed on a VM through a share
 							// (and probably in other cases).
-							|| (e.winLastError && e.winLastError == 3))) {
+							|| (e.winLastError && e.winLastError == 3)
+							// Handle long filenames on OS X (63) and Linux (36)
+							|| (e.unixErrno && (e.unixErrno == 63 || e.unixErrno == 36)))) {
 						Zotero.debug("Marking attachment " + lk + " as missing");
 						updatedStates[item.id] = Zotero.Sync.Storage.SYNC_STATE_TO_DOWNLOAD;
 						return;
@@ -1232,7 +1106,7 @@ Zotero.Sync.Storage = new function () {
 			// If library isn't editable but filename was changed, update
 			// database without updating the item's mod time, which would result
 			// in a library access error
-			if (!Zotero.Items.editCheck(item)) {
+			if (!Zotero.Items.isEditable(item)) {
 				Zotero.debug("File renamed without library access -- "
 					+ "updating itemAttachments path", 3);
 				item.relinkAttachmentFile(newFile, true);
@@ -1485,6 +1359,10 @@ Zotero.Sync.Storage = new function () {
 		if (!file) {
 			throw ("Empty path for item " + item.key + " in " + funcName);
 		}
+		// Don't save Windows aliases
+		if (file.leafName.endsWith('.lnk')) {
+			return false;
+		}
 		
 		var fileName = file.leafName;
 		var renamed = false;
@@ -1501,80 +1379,51 @@ Zotero.Sync.Storage = new function () {
 		
 		Zotero.debug("Moving download file " + tempFile.leafName + " into attachment directory as '" + fileName + "'");
 		try {
-			tempFile.moveTo(parentDir, fileName);
+			var destFile = parentDir.clone();
+			destFile.append(fileName);
+			Zotero.File.createShortened(destFile, Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 0644);
 		}
 		catch (e) {
-			var destFile = file.clone();
+			Zotero.File.checkFileAccessError(e, destFile, 'create');
+		}
+		
+		if (destFile.leafName != fileName) {
+			Zotero.debug("Changed filename '" + fileName + "' to '" + destFile.leafName + "'");
 			
-			var windowsLength = false;
-			var nameLength = false;
-			
-			// Windows API only allows paths of 260 characters
-			if (e.name == "NS_ERROR_FILE_NOT_FOUND" && destFile.path.length > 255) {
-				windowsLength = true;
-			}
-			// ext3/ext4/HFS+ have a filename length limit of ~254 bytes
-			//
-			// These filenames will almost always be ASCII ad files,
-			// but allow an extra 10 bytes anyway
-			else if (e.name == "NS_ERROR_FAILURE" && destFile.leafName.length >= 244) {
-				nameLength = true;
-			}
-			// Filesystem encryption (or, more specifically, filename encryption)
-			// can result in a lower limit -- not much we can do about this,
-			// but log a warning and skip the file
-			else if (e.name == "NS_ERROR_FAILURE" && Zotero.isLinux && destFile.leafName.length > 130) {
-				Zotero.debug(e);
-				var msg = Zotero.getString('sync.storage.error.encryptedFilenames', destFile.leafName);
-				Components.utils.reportError(msg);
-				return;
-			}
-			
-			if (windowsLength || nameLength) {
-				// Preserve extension
-				var matches = destFile.leafName.match(/\.[a-z0-9]{0,8}$/);
-				var ext = matches ? matches[0] : "";
-				
-				if (windowsLength) {
-					var pathLength = destFile.path.length - destFile.leafName.length;
-					var newLength = 255 - pathLength;
-					// Require 40 available characters in path -- this is arbitrary,
-					// but otherwise filenames are going to end up being cut off
-					if (newLength < 40) {
-						var msg = "Due to a Windows path length limitation, your Zotero data directory "
-								+ "is too deep in the filesystem for syncing to work reliably. "
-								+ "Please relocate your Zotero data to a higher directory.";
-						throw (msg);
-					}
+			// Abort if Windows path limitation would cause filenames to be overly truncated
+			if (Zotero.isWin && destFile.leafName.length < 40) {
+				try {
+					destFile.remove(false);
 				}
-				else {
-					var newLength = 254;
-				}
-				
-				// Shorten file if it's too long -- we don't relink it, but this should
-				// be pretty rare and probably only occurs on extraneous files with
-				// gibberish for filenames
-				var fileName = destFile.leafName.substr(0, newLength - (ext.length + 1)) + ext;
-				var msg = "Shortening filename to '" + fileName + "'";
-				Zotero.debug(msg, 2);
-				Components.utils.reportError(msg);
-				
-				tempFile.moveTo(parentDir, fileName);
-				renamed = true;
+				catch (e) {}
+				// TODO: localize
+				var msg = "Due to a Windows path length limitation, your Zotero data directory "
+					+ "is too deep in the filesystem for syncing to work reliably. "
+					+ "Please relocate your Zotero data to a higher directory.";
+				Zotero.debug(msg, 1);
+				throw new Error(msg);
 			}
-			else {
-				Components.utils.reportError(e);
-				var msg = Zotero.getString('sync.storage.error.fileNotCreated', parentDir.leafName + '/' + fileName);
-				throw(msg);
+			
+			renamed = true;
+		}
+		
+		try {
+			tempFile.moveTo(parentDir, destFile.leafName);
+		}
+		catch (e) {
+			try {
+				destFile.remove(false);
 			}
+			catch (e) {}
+			
+			Zotero.File.checkFileAccessError(e, destFile, 'create');
 		}
 		
 		var returnFile = null;
 		// processDownload() needs to know that we're renaming the file
 		if (renamed) {
-			var returnFile = file.clone();
+			returnFile = destFile.clone();
 		}
-		
 		return returnFile;
 	}
 	
@@ -1643,7 +1492,7 @@ Zotero.Sync.Storage = new function () {
 				var fileName = entryName;
 			}
 			
-			if (fileName.indexOf('.') == 0) {
+			if (fileName.startsWith('.zotero')) {
 				Zotero.debug("Skipping " + fileName);
 				continue;
 			}
@@ -1704,124 +1553,48 @@ Zotero.Sync.Storage = new function () {
 			}
 			
 			try {
-				destFile.create(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 0644);
+				Zotero.File.createShortened(destFile, Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 0644);
 			}
 			catch (e) {
 				Zotero.debug(e, 1);
+				Components.utils.reportError(e);
 				
-				var windowsLength = false;
-				var nameLength = false;
+				zipReader.close();
 				
-				// Windows API only allows paths of 260 characters
-				if (e.name == "NS_ERROR_FILE_NOT_FOUND" && destFile.path.length > 255) {
-					Zotero.debug("Path is " + destFile.path);
-					windowsLength = true;
-				}
-				// ext3/ext4/HFS+ have a filename length limit of ~254 bytes
-				//
-				// These filenames will almost always be ASCII ad files,
-				// but allow an extra 10 bytes anyway
-				else if (e.name == "NS_ERROR_FAILURE" && destFile.leafName.length >= 244) {
-					Zotero.debug("Filename is " + destFile.leafName);
-					nameLength = true;
-				}
-				// Filesystem encryption (or, more specifically, filename encryption)
-				// can result in a lower limit -- not much we can do about this,
-				// but log a warning and skip the file
-				else if (e.name == "NS_ERROR_FAILURE" && Zotero.isLinux && destFile.leafName.length > 130) {
-					var msg = Zotero.getString('sync.storage.error.encryptedFilenames', destFile.leafName);
-					Components.utils.reportError(msg);
-					continue;
-				}
-				else {
-					Zotero.debug("Path is " + destFile.path);
-				}
+				Zotero.File.checkFileAccessError(e, destFile, 'create');
+			}
+			
+			if (destFile.leafName != fileName) {
+				Zotero.debug("Changed filename '" + fileName + "' to '" + destFile.leafName + "'");
 				
-				if (windowsLength || nameLength) {
-					// Preserve extension
-					var matches = destFile.leafName.match(/\.[a-z0-9]{0,8}$/);
-					var ext = matches ? matches[0] : "";
-					
-					if (windowsLength) {
-						var pathLength = destFile.path.length - destFile.leafName.length;
-						// Limit should be 255, but a shorter limit seems to be
-						// enforced for nsIZipReader.extract() below on
-						// non-English systems
-						var newLength = 240 - pathLength;
-						// Require 40 available characters in path -- this is arbitrary,
-						// but otherwise filenames are going to end up being cut off
-						if (newLength < 40) {
-							zipReader.close();
-							var msg = "Due to a Windows path length limitation, your Zotero data directory "
-									+ "is too deep in the filesystem for syncing to work reliably. "
-									+ "Please relocate your Zotero data to a higher directory.";
-							throw (msg);
-						}
-					}
-					else {
-						var newLength = 240;
-					}
-					
-					// Shorten file if it's too long -- we don't relink it, but this should
-					// be pretty rare and probably only occurs on extraneous files with
-					// gibberish for filenames
-					//
-					// Shortened file could already exist if there was another file with a
-					// similar name that was also longer than the limit, so we do this in a
-					// loop, adding numbers if necessary
-					var step = 0;
-					do {
-						if (step == 0) {
-							var newName = destFile.leafName.substr(0, newLength - ext.length) + ext;
-						}
-						else {
-							var newName = destFile.leafName.substr(0, newLength - ext.length) + "-" + step + ext;
-						}
-						destFile.leafName = newName;
-						step++;
-					}
-					while (destFile.exists());
-					
-					var msg = "Shortening filename to '" + newName + "'";
-					Zotero.debug(msg, 2);
-					Components.utils.reportError(msg);
-					
+				// Abort if Windows path limitation would cause filenames to be overly truncated
+				if (Zotero.isWin && destFile.leafName.length < 40) {
 					try {
-						destFile.create(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 0644);
+						destFile.remove(false);
 					}
-					catch (e) {
-						// See above
-						if (e.name == "NS_ERROR_FAILURE" && Zotero.isLinux && destFile.leafName.length > 130) {
-							Zotero.debug(e);
-							var msg = Zotero.getString('sync.storage.error.encryptedFilenames', destFile.leafName);
-							Components.utils.reportError(msg);
-							continue;
-						}
-						
-						zipReader.close();
-						
-						Components.utils.reportError(e);
-						var msg = Zotero.getString('sync.storage.error.fileNotCreated', parentDir.leafName + '/' + fileName);
-						throw(msg);
-					}
-					
-					if (primaryFile) {
-						renamed = true;
-					}
-				}
-				else {
+					catch (e) {}
 					zipReader.close();
-					
-					Components.utils.reportError(e);
-					var msg = Zotero.getString('sync.storage.error.fileNotCreated', parentDir.leafName + '/' + fileName);
-					throw(msg);
+					// TODO: localize
+					var msg = "Due to a Windows path length limitation, your Zotero data directory "
+						+ "is too deep in the filesystem for syncing to work reliably. "
+						+ "Please relocate your Zotero data to a higher directory.";
+					Zotero.debug(msg, 1);
+					throw new Error(msg);
+				}
+				
+				if (primaryFile) {
+					renamed = true;
 				}
 			}
+			
 			try {
 				zipReader.extract(entryName, destFile);
 			}
 			catch (e) {
-				Zotero.debug(destFile.path);
+				try {
+					destFile.remove(false);
+				}
+				catch (e) {}
 				
 				// For advertising junk files, ignore a bug on Windows where
 				// destFile.create() works but zipReader.extract() doesn't
@@ -1839,16 +1612,6 @@ Zotero.Sync.Storage = new function () {
 				Zotero.File.checkFileAccessError(e, destFile, 'create');
 			}
 			
-			var origPath = destFile.path;
-			var origFileName = destFile.leafName;
-			destFile.normalize();
-			if (origPath != destFile.path) {
-				var msg = "ZIP file " + zipFile.leafName + " contained symlink '"
-					+ origFileName + "'";
-				Zotero.debug(msg, 1);
-				Components.utils.reportError(msg + " in " + funcName);
-				continue;
-			}
 			destFile.permissions = 0644;
 			
 			// If we're renaming the main file, processDownload() needs to know
@@ -1874,22 +1637,11 @@ Zotero.Sync.Storage = new function () {
 		var filesToDelete = [];
 		var file;
 		while (file = otherFiles.nextFile) {
-			if (file.leafName[0] == '.') {
+			if (file.leafName.startsWith('.zotero')) {
 				continue;
 			}
 			
-			// Firefox (as of 3.0.1) can't detect symlinks (at least on OS X),
-			// so use pre/post-normalized path to check
-			var origPath = file.path;
-			var origFileName = file.leafName;
-			file.normalize();
-			if (origPath != file.path) {
-				var msg = "Not deleting symlink '" + origFileName + "'";
-				Zotero.debug(msg, 2);
-				Components.utils.reportError(msg + " in " + funcName);
-				continue;
-			}
-			// This should be redundant with above check, but let's do it anyway
+			// Check symlink awareness, just to be safe
 			if (!parentDir.contains(file, false)) {
 				var msg = "Storage directory doesn't contain '" + file.leafName + "'";
 				Zotero.debug(msg, 2);
@@ -1986,7 +1738,7 @@ Zotero.Sync.Storage = new function () {
 				continue;
 			}
 			var fileName = file.getRelativeDescriptor(rootDir);
-			if (fileName.indexOf('.') == 0) {
+			if (fileName.startsWith('.zotero')) {
 				Zotero.debug('Skipping file ' + fileName);
 				continue;
 			}
@@ -2024,8 +1776,9 @@ Zotero.Sync.Storage = new function () {
 			params.push(Zotero.Sync.Storage.SYNC_STATE_TO_DOWNLOAD);
 		}
 		sql += ") "
-			// Skip attachments with empty path, which can't be saved
-			+ "AND path!=''";
+			// Skip attachments with empty path, which can't be saved, and files with .zotero*
+			// paths, which have somehow ended up in some users' libraries
+			+ "AND path!='' AND path NOT LIKE 'storage:.zotero%'";
 		var itemIDs = Zotero.DB.columnQuery(sql, params);
 		if (!itemIDs) {
 			return [];
@@ -2087,8 +1840,9 @@ Zotero.Sync.Storage = new function () {
 		var itemIDs = Zotero.DB.columnQuery(sql, params) || [];
 		
 		// Get files by open time
-		_uploadCheckFiles.filter(function (x) x.timestamp >= minTime);
-		itemIDs = itemIDs.concat([x.itemID for each(x in _uploadCheckFiles)])
+		itemIDs = itemIDs.concat(
+			_uploadCheckFiles.filter(file => file.timestamp >= minTime).map(file => file.itemID)
+		);
 		
 		return Zotero.Utilities.arrayUnique(itemIDs);
 	}

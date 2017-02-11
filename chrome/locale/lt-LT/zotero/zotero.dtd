@@ -6,9 +6,11 @@
 <!ENTITY zotero.general.delete "Šalinti">
 <!ENTITY zotero.general.ok "Gerai">
 <!ENTITY zotero.general.cancel "Atšaukti">
+<!ENTITY zotero.general.refresh "Atnaujinti">
+<!ENTITY zotero.general.saveAs "Įrašyti kaip...">
 
 <!ENTITY zotero.errorReport.title "Pranešimas apie klaidą Zotero programoje">
-<!ENTITY zotero.errorReport.unrelatedMessages "Klaidų sąraše gali būti žinučių nesusijųsių su Zotero.">
+<!ENTITY zotero.errorReport.unrelatedMessages "Čia gali būti pranešimų, visai nesusijusių su Zotero.">
 <!ENTITY zotero.errorReport.submissionInProgress "Prašome palaukti kol siunčiamas klaidų sąrašas.">
 <!ENTITY zotero.errorReport.submitted "Jūsų klaidų sąrašas buvo nusiųstas.">
 <!ENTITY zotero.errorReport.reportID "Pranešimo ID:">
@@ -45,7 +47,7 @@
 <!ENTITY zotero.collections.showUnfiledItems "Rodyti neužpildytus">
 
 <!ENTITY zotero.items.itemType "Įrašo tipas">
-<!ENTITY zotero.items.type_column "Item Type">
+<!ENTITY zotero.items.type_column "Įrašo tipas">
 <!ENTITY zotero.items.title_column "Antraštė">
 <!ENTITY zotero.items.creator_column "Autorius">
 <!ENTITY zotero.items.date_column "Data">
@@ -65,9 +67,9 @@
 <!ENTITY zotero.items.archiveLocation_column "Vieta archyve">
 <!ENTITY zotero.items.place_column "Vieta">
 <!ENTITY zotero.items.volume_column "Tomas">
-<!ENTITY zotero.items.edition_column "Leidimas">
+<!ENTITY zotero.items.edition_column "Leidimas/numeris">
 <!ENTITY zotero.items.pages_column "Puslapiai">
-<!ENTITY zotero.items.issue_column "Leidimas">
+<!ENTITY zotero.items.issue_column "Numeris">
 <!ENTITY zotero.items.series_column "Serija">
 <!ENTITY zotero.items.seriesTitle_column "Serijos pavadinimas">
 <!ENTITY zotero.items.court_column "Teismas">
@@ -86,7 +88,7 @@
 <!ENTITY zotero.items.menu.attach.file "Pridėti turimą failo kopiją...">
 <!ENTITY zotero.items.menu.attach.fileLink "Pridėti failo nuorodą...">
 
-<!ENTITY zotero.items.menu.restoreToLibrary "Atkurti biblioteką">
+<!ENTITY zotero.items.menu.restoreToLibrary "Atkurti į biblioteką">
 <!ENTITY zotero.items.menu.duplicateItem "Sukurti įrašo kopiją">
 <!ENTITY zotero.items.menu.mergeItems "Apjungti įrašus...">
 
@@ -119,11 +121,13 @@
 <!ENTITY zotero.toolbar.openURL.tooltip "Ieškoti vietinėje bibliotekoje">
 
 <!ENTITY zotero.item.add "Pridėti">
-<!ENTITY zotero.item.attachment.file.show "Rodyti failą">
+<!ENTITY zotero.item.attachment.file.show "Atverti failo aplanką">
 <!ENTITY zotero.item.textTransform "Teksto trasformavimas">
 <!ENTITY zotero.item.textTransform.titlecase "Antraštės raidžių lygis">
 <!ENTITY zotero.item.textTransform.sentencecase "Sakinio pavidalu">
 <!ENTITY zotero.item.creatorTransform.nameSwap "Sukeisti vardus ir pavardes">
+<!ENTITY zotero.item.viewOnline "Rodyti Internete">
+<!ENTITY zotero.item.copyAsURL "Kopijuoti URL">
 
 <!ENTITY zotero.toolbar.newNote "Nauja pastaba">
 <!ENTITY zotero.toolbar.note.standalone "Nauja nesusieta pastaba">
@@ -161,6 +165,7 @@
 
 <!ENTITY zotero.bibliography.title "Sukurti citavimą/bibliografiją">
 <!ENTITY zotero.bibliography.style.label "Citavimo stilius:">
+<!ENTITY zotero.bibliography.locale.label "Kalba:">
 <!ENTITY zotero.bibliography.outputMode "Išvedimo veiksena:">
 <!ENTITY zotero.bibliography.bibliography "Bibliografija">
 <!ENTITY zotero.bibliography.outputMethod "Išvedimo būdas:">
@@ -185,9 +190,6 @@
 
 <!ENTITY zotero.citation.keepSorted.label "Šaltinius automatiškai rikiuoti">
 
-<!ENTITY zotero.citation.page "Puslapis">
-<!ENTITY zotero.citation.paragraph "Pastraipa">
-<!ENTITY zotero.citation.line "Eilutė">
 <!ENTITY zotero.citation.suppressAuthor.label "Nerodyti autoriaus">
 <!ENTITY zotero.citation.prefix.label "Priešdėlis:">
 <!ENTITY zotero.citation.suffix.label "Priesaga:">
@@ -284,3 +286,7 @@
 <!ENTITY zotero.downloadManager.label "Įrašyti į Zotero">
 <!ENTITY zotero.downloadManager.saveToLibrary.description "Priedų negalima įrašyti pasirinktoje bibliotekoje. Šį įrašą įrašysime jūsų bibliotekoje.">
 <!ENTITY zotero.downloadManager.noPDFTools.description "Norėdami naudotis šia funkcija, turite įdiegti PDF įrankius per Zotero nuostatų paieškos skydelį.">
+
+<!ENTITY zotero.attachLink.title "Įtraukti nuorodą (URI)">
+<!ENTITY zotero.attachLink.label.link "Nuoroda:">
+<!ENTITY zotero.attachLink.label.title "Pavadinimas">

@@ -30,6 +30,16 @@
  * @class Utility functions not made available to translators
  */
 Zotero.Utilities.Internal = {
+	
+	/**
+	 * Unicode normalization
+	 */
+	"copyTextToClipboard":function(str) {
+		Components.classes["@mozilla.org/widget/clipboardhelper;1"]
+			.getService(Components.interfaces.nsIClipboardHelper)
+			.copyString(str);
+	},
+	
 	 /*
 	 * Adapted from http://developer.mozilla.org/en/docs/nsICryptoHash
 	 *
@@ -86,7 +96,11 @@ Zotero.Utilities.Internal = {
 		}
 		
 		// convert the binary hash data to a hex string.
-		return [toHexString(hash.charCodeAt(i)) for (i in hash)].join("");
+		var hexStr = "";
+		for (let i = 0; i < hash.length; i++) {
+			hexStr += toHexString(hash.charCodeAt(i));
+		}
+		return hexStr;
 	},
 	
 	
@@ -128,10 +142,11 @@ Zotero.Utilities.Internal = {
 						}
 						// Hex string
 						else {
-							deferred.resolve(
-								[toHexString(hash.charCodeAt(i))
-									for (i in hash)].join("")
-							);
+							let hexStr = "";
+							for (let i = 0; i < hash.length; i++) {
+								hexStr += toHexString(hash.charCodeAt(i));
+							}
+							deferred.resolve(hexStr);
 						}
 					}
 				},
@@ -195,6 +210,22 @@ Zotero.Utilities.Internal = {
 	
 	
 	/**
+	 * Return the byte length of a UTF-8 string
+	 *
+	 * http://stackoverflow.com/a/23329386
+	 */
+	byteLength: function (str) {
+		var s = str.length;
+		for (var i=str.length-1; i>=0; i--) {
+			var code = str.charCodeAt(i);
+			if (code > 0x7f && code <= 0x7ff) s++;
+			else if (code > 0x7ff && code <= 0xffff) s+=2;
+			if (code >= 0xDC00 && code <= 0xDFFF) i--; //trail surrogate
+		}
+		return s;
+	},
+	
+	/**
 	 * Display a prompt from an error with custom buttons and a callback
 	 */
 	"errorPrompt":function(title, e) {
@@ -249,13 +280,40 @@ Zotero.Utilities.Internal = {
 		}
 	},
 	
+	
+	/**
+	 * saveURI wrapper function
+	 * @param {nsIWebBrowserPersist} nsIWebBrowserPersist
+	 * @param {nsIURI} source URL
+	 * @param {nsISupports} target file
+	 */
+	saveURI: function (wbp, source, target) {
+		// Handle gzip encoding
+		wbp.persistFlags |= Ci.nsIWebBrowserPersist.PERSIST_FLAGS_AUTODETECT_APPLY_CONVERSION;
+		
+		// Firefox 35 and below
+		try {
+			wbp.saveURI(source, null, null, null, null, target, null);
+		}
+		// Firefox 36+ needs one more parameter
+		catch (e if e.name === "NS_ERROR_XPC_NOT_ENOUGH_ARGS") {
+			wbp.saveURI(source, null, null, null, null, null, target, null);
+		}
+	},
+	
+	
 	/**
 	 * Launch a process
-	 * @param {nsIFile} cmd Path to command to launch
+	 * @param {nsIFile|String} cmd Path to command to launch
 	 * @param {String[]} args Arguments given
 	 * @return {Promise} Promise resolved to true if command succeeds, or an error otherwise
 	 */
 	"exec":function(cmd, args) {
+		if (typeof cmd == 'string') {
+			Components.utils.import("resource://gre/modules/FileUtils.jsm");
+			cmd = new FileUtils.File(cmd);
+		}
+		
 		if(!cmd.isExecutable()) {
 			return Q.reject(cmd.path+" is not an executable");
 		}
@@ -314,6 +372,216 @@ Zotero.Utilities.Internal = {
 			childWindow = childWindow.parent;
 			if(childWindow === parentWindow) return true;
 		}
+	},
+	
+	/**
+	 * Converts Zotero.Item to a format expected by translators
+	 * This is mostly the Zotero web API item JSON format, but with an attachments
+	 * and notes arrays and optional compatibility mappings for older translators.
+	 * 
+	 * @param {Zotero.Item} zoteroItem
+	 * @param {Boolean} legacy Add mappings for legacy (pre-4.0.27) translators
+	 * @return {Object}
+	 */
+	"itemToExportFormat": new function() {
+		return function(zoteroItem, legacy) {
+			var item = zoteroItem.toJSON();
+			item.uri = Zotero.URI.getItemURI(zoteroItem);
+			delete item.key;
+			
+			if (!zoteroItem.isAttachment() && !zoteroItem.isNote()) {
+				// Include attachments
+				item.attachments = [];
+				let attachments = zoteroItem.getAttachments();
+				for (let i=0; i<attachments.length; i++) {
+					let zoteroAttachment = Zotero.Items.get(attachments[i]),
+						attachment = zoteroAttachment.toJSON();
+					if (legacy) addCompatibilityMappings(attachment, zoteroAttachment);
+					
+					item.attachments.push(attachment);
+				}
+				
+				// Include notes
+				item.notes = [];
+				let notes = zoteroItem.getNotes();
+				for (let i=0; i<notes.length; i++) {
+					let zoteroNote = Zotero.Items.get(notes[i]),
+						note = zoteroNote.toJSON();
+					if (legacy) addCompatibilityMappings(note, zoteroNote);
+					
+					item.notes.push(note);
+				}
+			}
+			
+			if (legacy) addCompatibilityMappings(item, zoteroItem);
+			
+			return item;
+		}
+		
+		function addCompatibilityMappings(item, zoteroItem) {
+			item.uniqueFields = {};
+			
+			// Meaningless local item ID, but some older export translators depend on it
+			item.itemID = zoteroItem.id;
+			item.key = zoteroItem.key; // CSV translator exports this
+			
+			// "version" is expected to be a field for "computerProgram", which is now
+			// called "versionNumber"
+			delete item.version;
+			if (item.versionNumber) {
+				item.version = item.uniqueFields.version = item.versionNumber;
+				delete item.versionNumber;
+			}
+			
+			// SQL instead of ISO-8601
+			item.dateAdded = zoteroItem.dateAdded;
+			item.dateModified = zoteroItem.dateModified;
+			if (item.accessDate) {
+				item.accessDate = zoteroItem.getField('accessDate');
+			}
+			
+			// Map base fields
+			for (let field in item) {
+				let id = Zotero.ItemFields.getID(field);
+				if (!id || !Zotero.ItemFields.isValidForType(id, zoteroItem.itemTypeID)) {
+					 continue;
+				}
+				
+				let baseField = Zotero.ItemFields.getName(
+					Zotero.ItemFields.getBaseIDFromTypeAndField(item.itemType, field)
+				);
+				
+				if (!baseField || baseField == field) {
+					item.uniqueFields[field] = item[field];
+				} else {
+					item[baseField] = item[field];
+					item.uniqueFields[baseField] = item[field];
+				}
+			}
+			
+			// Add various fields for compatibility with translators pre-4.0.27
+			item.itemID = zoteroItem.id;
+			item.libraryID = zoteroItem.libraryID;
+			
+			// Creators
+			if (item.creators) {
+				for (let i=0; i<item.creators.length; i++) {
+					let creator = item.creators[i];
+					
+					if (creator.name) {
+						creator.fieldMode = 1;
+						creator.lastName = creator.name;
+						delete creator.name;
+					}
+					
+					// Old format used to supply creatorID (the database ID), but no
+					// translator ever used it
+				}
+			}
+			
+			if (!zoteroItem.isRegularItem()) {
+				item.sourceItemKey = item.parentItem;
+			}
+			
+			// Tags
+			for (let i=0; i<item.tags.length; i++) {
+				if (!item.tags[i].type) {
+					item.tags[i].type = 0;
+				}
+				// No translator ever used "primary", "fields", or "linkedItems" objects
+			}
+			
+			// "related" was never used (array of itemIDs)
+			
+			// seeAlso was always present, but it was always an empty array.
+			// Zotero RDF translator pretended to use it
+			item.seeAlso = [];
+			
+			if (zoteroItem.isAttachment()) {
+				item.linkMode = item.uniqueFields.linkMode = zoteroItem.attachmentLinkMode;
+				item.mimeType = item.uniqueFields.mimeType = item.contentType;
+			}
+			
+			if (item.note) {
+				item.uniqueFields.note = item.note;
+			}
+			
+			return item;
+		}
+	},
+	
+	/**
+	 * Hyphenate an ISBN based on the registrant table available from
+	 * https://www.isbn-international.org/range_file_generation
+	 * See isbn.js
+	 *
+	 * @param {String} isbn ISBN-10 or ISBN-13
+	 * @param {Boolean} dontValidate Do not attempt to validate check digit
+	 * @return {String} Hyphenated ISBN or empty string if invalid ISBN is supplied
+	 */
+	"hyphenateISBN": function(isbn, dontValidate) {
+		isbn = Zotero.Utilities.cleanISBN(isbn, dontValidate);
+		if (!isbn) return '';
+		
+		var ranges = Zotero.ISBN.ranges,
+			parts = [],
+			uccPref,
+			i = 0;
+		if (isbn.length == 10) {
+			uccPref = '978';
+		} else {
+			uccPref = isbn.substr(0,3);
+			if (!ranges[uccPref]) return ''; // Probably invalid ISBN, but the checksum is OK
+			parts.push(uccPref);
+			i = 3; // Skip ahead
+		}
+		
+		var group = '',
+			found = false;
+		while (i < isbn.length-3 /* check digit, publication, registrant */) {
+			group += isbn.charAt(i);
+			if (ranges[uccPref][group]) {
+				parts.push(group);
+				found = true;
+				break;
+			}
+			i++;
+		}
+		
+		if (!found) return ''; // Did not find a valid group
+		
+		// Array of registrant ranges that are valid for a group
+		// Array always contains an even number of values (as string)
+		// From left to right, the values are paired so that the first indicates a
+		// lower bound of the range and the right indicates an upper bound
+		// The ranges are sorted by increasing number of characters
+		var regRanges = ranges[uccPref][group];
+		
+		var registrant = '';
+		found = false;
+		i++; // Previous loop 'break'ed early
+		while (!found && i < isbn.length-2 /* check digit, publication */) {
+			registrant += isbn.charAt(i);
+			
+			for(let j=0; j < regRanges.length && registrant.length >= regRanges[j].length; j+=2) {
+				if(registrant.length == regRanges[j].length
+					&& registrant >= regRanges[j] && registrant <= regRanges[j+1] // Falls within the range
+				) {
+					parts.push(registrant);
+					found = true;
+					break;
+				}
+			}
+			
+			i++;
+		}
+		
+		if (!found) return ''; // Outside of valid range, but maybe we need to update our data
+		
+		parts.push(isbn.substring(i,isbn.length-1)); // Publication is the remainder up to last digit
+		parts.push(isbn.charAt(isbn.length-1)); // Check digit
+		
+		return parts.join('-');
 	}
 }
 

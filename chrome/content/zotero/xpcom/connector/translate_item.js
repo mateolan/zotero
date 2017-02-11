@@ -80,8 +80,7 @@ Zotero.Translate.ItemSaver.prototype = {
 			payload.uri = this._uri;
 			payload.cookie = this._cookie;
 		}
-		
-		Zotero.Connector.callMethod("saveItems", payload, function(data, status) {
+		Zotero.Connector.setCookiesThenSaveItems(payload, function(data, status) {
 			if(data !== false) {
 				Zotero.debug("Translate: Save via Standalone succeeded");
 				var haveAttachments = false;
@@ -175,13 +174,14 @@ Zotero.Translate.ItemSaver.prototype = {
 	 *     attachmentCallback() will be called with all attachments that will be saved 
 	 */
 	"_saveToServer":function(items, callback, attachmentCallback) {
-		var newItems = [], typedArraysSupported = false;
+		var newItems = [], itemIndices = [], typedArraysSupported = false;
 		try {
 			typedArraysSupported = !!(new Uint8Array(1) && new Blob());
 		} catch(e) {}
 		
 		for(var i=0, n=items.length; i<n; i++) {
 			var item = items[i];
+			itemIndices[i] = newItems.length;
 			newItems = newItems.concat(Zotero.Utilities.itemToServerJSON(item));
 			if(typedArraysSupported) {
 				for(var j=0; j<item.attachments.length; j++) {
@@ -196,7 +196,7 @@ Zotero.Translate.ItemSaver.prototype = {
 		Zotero.API.createItem({"items":newItems}, function(statusCode, response) {
 			if(statusCode !== 200) {
 				callback(false, new Error("Save to server failed with "+statusCode+" "+response));
-				retrun;
+				return;
 			}
 
 			try {
@@ -215,9 +215,8 @@ Zotero.Translate.ItemSaver.prototype = {
 			function(prefs) {
 
 				if(typedArraysSupported) {
-					Zotero.debug(response);
-					for(var i in resp.success) {
-						var item = items[i], key = resp.success[i];
+					for(var i=0; i<items.length; i++) {
+						var item = items[i], key = resp.success[itemIndices[i]];
 						if(item.attachments && item.attachments.length) {
 							me._saveAttachmentsToServer(key, me._getFileBaseNameFromItem(item),
 								item.attachments, prefs, attachmentCallback);
@@ -469,10 +468,13 @@ Zotero.Translate.ItemSaver.prototype = {
 								doc = (new DOMParser()).parseFromString(result, "text/html");
 							} catch(e) {}
 							
-							// If DOMParser fails, use document.implementation.createHTMLDocument
+							// If DOMParser fails, use document.implementation.createHTMLDocument,
+							// as documented at https://developer.mozilla.org/en-US/docs/Web/API/DOMParser
 							if(!doc) {
 								doc = document.implementation.createHTMLDocument("");
 								var docEl = doc.documentElement;
+								// AMO reviewer: This code is not run in Firefox, and the document
+								// is never rendered anyway
 								docEl.innerHTML = result;
 								if(docEl.children.length === 1 && docEl.firstElementChild === "html") {
 									doc.replaceChild(docEl.firstElementChild, docEl);

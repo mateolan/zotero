@@ -25,10 +25,11 @@
 
 
 Zotero.Debug = new function () {
-	var _console, _stackTrace, _store, _level, _time, _lastTime, _output = [];
+	var _console, _consolePref, _stackTrace, _store, _level, _time, _lastTime, _output = [];
 	
 	this.init = function (forceDebugLog) {
-		_console = forceDebugLog || Zotero.Prefs.get('debug.log');
+		_consolePref = Zotero.Prefs.get('debug.log');
+		_console = _consolePref || forceDebugLog;
 		_store = Zotero.Prefs.get('debug.store');
 		if (_store) {
 			Zotero.Prefs.set('debug.store', false);
@@ -44,23 +45,6 @@ Zotero.Debug = new function () {
 	this.log = function (message, level) {
 		if (!_console && !_store) {
 			return;
-		}
-		
-		// Properly display thrown Error objects
-		if (message && message.constructor) {
-			switch (message.constructor.name) {
-				case 'Error':
-				case 'EvalError':
-				case 'RangeError':
-				case 'ReferenceError':
-				case 'SyntaxError':
-				case 'TypeError':
-				case 'URIError':
-					message = "'message' => \"" + message.message + "\"\n"
-								+ Zotero.Utilities.varDump(message) + "\n"
-								+ message.stack;
-					break;
-			}
 		}
 		
 		if (typeof message != 'string') {
@@ -106,11 +90,12 @@ Zotero.Debug = new function () {
 		if (_console) {
 			var output = 'zotero(' + level + ')' + (_time ? deltaStr : '') + ': ' + message;
 			if(Zotero.isFx && !Zotero.isBookmarklet) {
-				// On Windows, where the text console is inexplicably glacial,
-				// log to the Browser Console instead
+				// On Windows, where the text console (-console) is inexplicably glacial,
+				// log to the Browser Console instead if only the -ZoteroDebug flag is used.
+				// Developers can use the debug.log/debug.time prefs and the Cygwin text console.
 				//
 				// TODO: Get rid of the filename and line number
-				if (Zotero.isWin && !Zotero.isStandalone) {
+				if (!_consolePref && Zotero.isWin && !Zotero.isStandalone) {
 					var console = Components.utils.import("resource://gre/modules/devtools/Console.jsm", {}).console;
 					console.log(output);
 				}

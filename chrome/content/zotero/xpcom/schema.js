@@ -27,6 +27,9 @@ Zotero.Schema = new function(){
 	this.skipDefaultData = false;
 	this.dbInitialized = false;
 	this.goToChangeLog = false;
+
+	var _schemaUpdateDeferred = Q.defer();
+	this.schemaUpdatePromise = _schemaUpdateDeferred.promise;
 	
 	var _dbVersions = [];
 	var _schemaVersions = [];
@@ -98,7 +101,7 @@ Zotero.Schema = new function(){
 					   .getService(Components.interfaces.nsIWindowWatcher);
 			var data = {
 				msg: obj.data.msg,
-				e: obj.data.e,
+				errorData: obj.data.e,
 				extraData: "Schema upgrade from " + dbVersion + " to " + schemaVersion
 			};
 			var io = { wrappedJSObject: { Zotero: Zotero, data:  data } };
@@ -121,7 +124,9 @@ Zotero.Schema = new function(){
 		// 'user' is for pre-1.0b2 'user' table
 		if (!dbVersion && !this.getDBVersion('schema') && !this.getDBVersion('user')){
 			Zotero.debug('Database does not exist -- creating\n');
-			_initializeSchema();
+			_initializeSchema().then(function() {
+				_schemaUpdateDeferred.resolve(true);
+			});
 			return true;
 		}
 		
@@ -219,6 +224,7 @@ Zotero.Schema = new function(){
 			Zotero.Schema.updateBundledFiles(null, false, true)
 			.finally(function () {
 				Zotero.UnresponsiveScriptIndicator.enable();
+				_schemaUpdateDeferred.resolve(true);
 			})
 			.done();
 		}, 5000);
@@ -1023,7 +1029,7 @@ Zotero.Schema = new function(){
 		// Get the last timestamp we got from the server
 		var lastUpdated = this.getDBVersion('repository');
 		
-		var url = ZOTERO_CONFIG['REPOSITORY_URL'] + '/updated?'
+		var url = ZOTERO_CONFIG.REPOSITORY_URL + 'updated?'
 			+ (lastUpdated ? 'last=' + lastUpdated + '&' : '')
 			+ 'version=' + Zotero.version;
 		
@@ -1507,7 +1513,7 @@ Zotero.Schema = new function(){
 			throw(e);
 		}
 		
-		Zotero.Schema.updateBundledFiles(null, null, true)
+		return Zotero.Schema.updateBundledFiles(null, null, true)
 		.catch(function (e) {
 			Zotero.debug(e);
 			Zotero.logError(e);
@@ -1548,8 +1554,12 @@ Zotero.Schema = new function(){
 			return true;
 		}
 		
-		throw ("Zotero '" + schema + "' DB version (" + dbVersion
-			+ ") is newer than SQL file (" + schemaVersion + ")");
+		let dbClientVersion = Zotero.DB.valueQuery(
+			"SELECT value FROM settings WHERE setting='client' AND key='lastCompatibleVersion'"
+		);
+		let msg = "Database is incompatible with this Zotero version "
+			+ `(${schema}: ${schemaVersion} > ${dbVersion})`
+		throw new Zotero.DB.IncompatibleVersionException(msg, dbClientVersion);
 	}
 	
 	
@@ -1583,6 +1593,116 @@ Zotero.Schema = new function(){
 		var translatorUpdates = xmlhttp.responseXML.getElementsByTagName('translator');
 		var styleUpdates = xmlhttp.responseXML.getElementsByTagName('style');
 		
+		var updatePDFTools = function () {
+			// No updates for PPC
+			if (Zotero.platform == 'MacPPC') return;
+			
+			let pdfToolsUpdates = xmlhttp.responseXML.getElementsByTagName('pdftools');
+			if (pdfToolsUpdates.length) {
+				let availableVersion = pdfToolsUpdates[0].getAttribute('version');
+				let installInfo = false;
+				let installConverter = false;
+				
+				// Don't auto-install if not installed
+				if (!Zotero.Fulltext.pdfInfoIsRegistered() && !Zotero.Fulltext.pdfConverterIsRegistered()) {
+					return;
+				}
+				
+				// TEMP
+				if (Zotero.isWin) {
+					if (Zotero.Fulltext.pdfInfoIsRegistered()) {
+						if (Zotero.Fulltext.pdfInfoVersion != '3.02a') {
+							installInfo = true;
+						}
+					}
+					// Install missing component if one is installed
+					else if (Zotero.Fulltext.pdfConverterIsRegistered()) {
+						installInfo = true;
+					}
+					if (Zotero.Fulltext.pdfConverterIsRegistered()) {
+						if (Zotero.Fulltext.pdfConverterVersion != '3.02a') {
+							installConverter = true;
+						}
+					}
+					// Install missing component if one is installed
+					else if (Zotero.Fulltext.pdfInfoIsRegistered()) {
+						installConverter = true;
+					}
+					availableVersion = '3.02';
+				}
+				else {
+					if (Zotero.Fulltext.pdfInfoIsRegistered()) {
+						let currentVersion = Zotero.Fulltext.pdfInfoVersion;
+						if (currentVersion < availableVersion || currentVersion.startsWith('3.02')
+								|| currentVersion == 'UNKNOWN') {
+							installInfo = true;
+						}
+					}
+					// Install missing component if one is installed
+					else if (Zotero.Fulltext.pdfConverterIsRegistered()) {
+						installInfo = true;
+					}
+					if (Zotero.Fulltext.pdfConverterIsRegistered()) {
+						let currentVersion = Zotero.Fulltext.pdfConverterVersion;
+						if (currentVersion < availableVersion || currentVersion.startsWith('3.02')
+								|| currentVersion == 'UNKNOWN') {
+							installConverter = true;
+						}
+					}
+					// Install missing component if one is installed
+					else if (Zotero.Fulltext.pdfInfoIsRegistered()) {
+						installConverter = true;
+					}
+				}
+				
+				let prefKey = 'pdfToolsInstallError';
+				let lastTry = 0, delay = 43200000; // half a day, so doubles to a day initially
+				try {
+					[lastTry, delay] = Zotero.Prefs.get(prefKey).split(';');
+				}
+				catch (e) {}
+				
+				// Allow an additional minute, since repo updates might not be exact
+				if (Date.now() < (parseInt(lastTry) + parseInt(delay) - 60000)) {
+					Zotero.debug("Now enough time since last PDF tools installation failure -- skipping", 2);
+					return;
+				}
+				
+				var checkResult = function (success) {
+					if (success) {
+						try {
+							Zotero.Prefs.clear(prefKey);
+						}
+						catch (e) {}
+					}
+					else {
+						// Keep doubling delay, to a max of 1 week
+						Zotero.Prefs.set(prefKey, Date.now() + ";" + Math.min(delay * 2, 7*24*60*60*1000));
+						
+						let msg = "Error downloading PDF tool";
+						Zotero.debug(msg, 1);
+						throw new Error(msg);
+					}
+				};
+				
+				if (installConverter && installInfo) {
+					Zotero.Fulltext.downloadPDFTool('converter', availableVersion, function (success) {
+						checkResult(success);
+						Zotero.Fulltext.downloadPDFTool('info', availableVersion, checkResult);
+					});
+				}
+				else if (installConverter) {
+					Zotero.Fulltext.downloadPDFTool('converter', availableVersion, checkResult);
+				}
+				else if (installInfo) {
+					Zotero.Fulltext.downloadPDFTool('info', availableVersion, checkResult);
+				}
+				else {
+					Zotero.debug("PDF tools are up to date");
+				}
+			}
+		};
+		
 		Zotero.DB.beginTransaction();
 		
 		// TODO: clear DB version 'sync' from removed _updateDBVersion()
@@ -1603,6 +1723,11 @@ Zotero.Schema = new function(){
 				_setRepositoryTimer(ZOTERO_CONFIG['REPOSITORY_CHECK_INTERVAL']);
 			}
 			_remoteUpdateInProgress = false;
+			
+			setTimeout(function () {
+				updatePDFTools();
+			});
+			
 			return -1;
 		}
 		
@@ -1634,6 +1759,11 @@ Zotero.Schema = new function(){
 			_setRepositoryTimer(ZOTERO_CONFIG['REPOSITORY_CHECK_INTERVAL']);
 		}
 		_remoteUpdateInProgress = false;
+		
+		setTimeout(function () {
+			updatePDFTools();
+		});
+		
 		return true;
 	}
 	
@@ -1811,7 +1941,12 @@ Zotero.Schema = new function(){
 			return false;
 		}
 		else if (fromVersion > toVersion) {
-			throw("Zotero user data DB version is newer than SQL file");
+			let dbClientVersion = Zotero.DB.valueQuery(
+				"SELECT value FROM settings WHERE setting='client' AND key='lastCompatibleVersion'"
+			);
+			let msg = "Database is incompatible with this Zotero version "
+				+ `(user data: ${fromVersion} > ${toVersion})`
+			throw new Zotero.DB.IncompatibleVersionException(msg, dbClientVersion);
 		}
 		
 		Zotero.debug('Updating user data tables from version ' + fromVersion + ' to ' + toVersion);
@@ -1962,9 +2097,9 @@ Zotero.Schema = new function(){
 						var rows = Zotero.DB.query("SELECT * FROM itemData WHERE valueID NOT IN (SELECT valueID FROM itemDataValues)");
 						if (rows) {
 							for (var j=0; j<rows.length; j++) {
-								for (var j=0; j<values.length; j++) {
+								for (var k=0; k<values.length; k++) {
 									var valueID = Zotero.ID.get('itemDataValues');
-									Zotero.DB.query("INSERT INTO itemDataValues VALUES (?,?)", [valueID, values[j]]);
+									Zotero.DB.query("INSERT INTO itemDataValues VALUES (?,?)", [valueID, values[k]]);
 									Zotero.DB.query("UPDATE itemData SET valueID=? WHERE itemID=? AND fieldID=?", [valueID, rows[j]['itemID'], rows[j]['fieldID']]);
 								}
 							}

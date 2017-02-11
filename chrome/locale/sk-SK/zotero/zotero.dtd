@@ -6,9 +6,11 @@
 <!ENTITY zotero.general.delete "Vymazať">
 <!ENTITY zotero.general.ok "OK">
 <!ENTITY zotero.general.cancel "Zrušiť">
+<!ENTITY zotero.general.refresh "Obnoviť">
+<!ENTITY zotero.general.saveAs "Uložiť ako...">
 
 <!ENTITY zotero.errorReport.title "Výkaz chýb Zotera">
-<!ENTITY zotero.errorReport.unrelatedMessages "Hlásenie o chybe môže obsahovať informácie nesúvisiace so Zoterom.">
+<!ENTITY zotero.errorReport.unrelatedMessages "Toto môže obsahovať hlásenia nesúvisiace so Zoterom.">
 <!ENTITY zotero.errorReport.submissionInProgress "Prosím počkajte, kým sa hlásenie o chybe neodošle.">
 <!ENTITY zotero.errorReport.submitted "Hlásenie o chybe bolo odoslané.">
 <!ENTITY zotero.errorReport.reportID "ID hlásenia:">
@@ -45,7 +47,7 @@
 <!ENTITY zotero.collections.showUnfiledItems "Zobraziť nezaradené exempláre">
 
 <!ENTITY zotero.items.itemType "Typ exemplára">
-<!ENTITY zotero.items.type_column "Item Type">
+<!ENTITY zotero.items.type_column "Typ exemplára">
 <!ENTITY zotero.items.title_column "Názov">
 <!ENTITY zotero.items.creator_column "Autor">
 <!ENTITY zotero.items.date_column "Dátum">
@@ -124,6 +126,8 @@
 <!ENTITY zotero.item.textTransform.titlecase "Prvé Veľké">
 <!ENTITY zotero.item.textTransform.sentencecase "Prvé veľké písmeno vo vete">
 <!ENTITY zotero.item.creatorTransform.nameSwap "Vymeniť meno/priezvisko">
+<!ENTITY zotero.item.viewOnline "Zobraziť online">
+<!ENTITY zotero.item.copyAsURL "Kopírovať ako URL">
 
 <!ENTITY zotero.toolbar.newNote "Nová poznámka">
 <!ENTITY zotero.toolbar.note.standalone "Nová samostatná poznámka">
@@ -161,6 +165,7 @@
 
 <!ENTITY zotero.bibliography.title "Vytvoriť bibliografiu">
 <!ENTITY zotero.bibliography.style.label "Citačný štýl:">
+<!ENTITY zotero.bibliography.locale.label "Jazyk:">
 <!ENTITY zotero.bibliography.outputMode "Výstupný režim:">
 <!ENTITY zotero.bibliography.bibliography "Bibliografia">
 <!ENTITY zotero.bibliography.outputMethod "Výstupná metóda:">
@@ -185,9 +190,6 @@
 
 <!ENTITY zotero.citation.keepSorted.label "Zachovať zoradenie zdrojov">
 
-<!ENTITY zotero.citation.page "Strana">
-<!ENTITY zotero.citation.paragraph "Odstavec">
-<!ENTITY zotero.citation.line "Riadok">
 <!ENTITY zotero.citation.suppressAuthor.label "Vynechaj autora">
 <!ENTITY zotero.citation.prefix.label "Predpona:">
 <!ENTITY zotero.citation.suffix.label "Prípona:">
@@ -284,3 +286,7 @@
 <!ENTITY zotero.downloadManager.label "Uložiť do Zotera">
 <!ENTITY zotero.downloadManager.saveToLibrary.description "Prílohy nemožno uložiť do práve vybranej knižnice. Tento exemplár sa preto uloží do vašej knižnice.">
 <!ENTITY zotero.downloadManager.noPDFTools.description "Pre použitie tejto funkcie musíte najprv nainštalovať nástroje PDF v predvoľbách Zotera.">
+
+<!ENTITY zotero.attachLink.title "Priložiť odkaz k URI">
+<!ENTITY zotero.attachLink.label.link "Odkaz:">
+<!ENTITY zotero.attachLink.label.title "Názov:">

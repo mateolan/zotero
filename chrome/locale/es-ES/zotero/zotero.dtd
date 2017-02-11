@@ -6,9 +6,11 @@
 <!ENTITY zotero.general.delete "Borrar">
 <!ENTITY zotero.general.ok "OK">
 <!ENTITY zotero.general.cancel "Cancelar">
+<!ENTITY zotero.general.refresh "Actualizar">
+<!ENTITY zotero.general.saveAs "Guardar como…">
 
 <!ENTITY zotero.errorReport.title "Informe de errores de Zotero">
-<!ENTITY zotero.errorReport.unrelatedMessages "El informe de errores puede incluir mensajes sin relación con Zotero.">
+<!ENTITY zotero.errorReport.unrelatedMessages "Esto puede incluir mensajes no relacionados con Zotero.">
 <!ENTITY zotero.errorReport.submissionInProgress "Por favor, espera mientras se envía el informe de error.">
 <!ENTITY zotero.errorReport.submitted "Se ha enviado el informe de error.">
 <!ENTITY zotero.errorReport.reportID "Identificador de informe:">
@@ -45,7 +47,7 @@
 <!ENTITY zotero.collections.showUnfiledItems "Mostrar ítems unificados">
 
 <!ENTITY zotero.items.itemType "Tipo de ítem">
-<!ENTITY zotero.items.type_column "Item Type">
+<!ENTITY zotero.items.type_column "Tipo de ítem">
 <!ENTITY zotero.items.title_column "Título">
 <!ENTITY zotero.items.creator_column "Creador">
 <!ENTITY zotero.items.date_column "Fecha">
@@ -123,7 +125,9 @@
 <!ENTITY zotero.item.textTransform "Transformar texto">
 <!ENTITY zotero.item.textTransform.titlecase "Capitalización De Título">
 <!ENTITY zotero.item.textTransform.sentencecase "Capitalización de oración">
-<!ENTITY zotero.item.creatorTransform.nameSwap "Intercambiar nombre/apellidos">
+<!ENTITY zotero.item.creatorTransform.nameSwap "Intercambiar Nombre/Apellido">
+<!ENTITY zotero.item.viewOnline "Ver en línea">
+<!ENTITY zotero.item.copyAsURL "Copiar como URL">
 
 <!ENTITY zotero.toolbar.newNote "Nueva nota">
 <!ENTITY zotero.toolbar.note.standalone "Nueva nota independiente">
@@ -161,6 +165,7 @@
 
 <!ENTITY zotero.bibliography.title "Crear bibliografía">
 <!ENTITY zotero.bibliography.style.label "Estilo de cita:">
+<!ENTITY zotero.bibliography.locale.label "Idioma:">
 <!ENTITY zotero.bibliography.outputMode "Modo de salida:">
 <!ENTITY zotero.bibliography.bibliography "Bibliografía">
 <!ENTITY zotero.bibliography.outputMethod "Método de salida:">
@@ -185,9 +190,6 @@
 
 <!ENTITY zotero.citation.keepSorted.label "Mantener las fuentes ordenadas">
 
-<!ENTITY zotero.citation.page "Página">
-<!ENTITY zotero.citation.paragraph "Párrafo">
-<!ENTITY zotero.citation.line "Línea">
 <!ENTITY zotero.citation.suppressAuthor.label "Omitir el autor">
 <!ENTITY zotero.citation.prefix.label "Prefijo:">
 <!ENTITY zotero.citation.suffix.label "Sufijo:">
@@ -284,3 +286,7 @@
 <!ENTITY zotero.downloadManager.label "Guardar en Zotero">
 <!ENTITY zotero.downloadManager.saveToLibrary.description "Los archivos adjuntos no se pueden guardar en la biblioteca seleccionada. Así, este ítem será guardado en su biblioteca.">
 <!ENTITY zotero.downloadManager.noPDFTools.description "Para utilizar esta función, debe primeramente instalar las herramientas PDF en las preferencias de Zotero.">
+
+<!ENTITY zotero.attachLink.title "Adjuntar enlace a URI">
+<!ENTITY zotero.attachLink.label.link "Enlace:">
+<!ENTITY zotero.attachLink.label.title "Título:">

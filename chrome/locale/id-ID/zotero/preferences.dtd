@@ -12,8 +12,6 @@
 <!ENTITY zotero.preferences.showIn.browserPane "Jendela peramban">
 <!ENTITY zotero.preferences.showIn.separateTab "Tab terpisah">
 <!ENTITY zotero.preferences.showIn.appTab "Tab App">
-<!ENTITY zotero.preferences.statusBarIcon "Logo bar status:">
-<!ENTITY zotero.preferences.statusBarIcon.none "Tidak ada">
 <!ENTITY zotero.preferences.fontSize "Ukuran font:">
 <!ENTITY zotero.preferences.fontSize.small "Kecil">
 <!ENTITY zotero.preferences.fontSize.medium "Sedang">
@@ -109,6 +107,7 @@
 <!ENTITY zotero.preferences.quickCopy.siteEditor.domainPath "Domain/Rute">
 <!ENTITY zotero.preferences.quickCopy.siteEditor.domainPath.example "(misalnya, wikipedia.org)">
 <!ENTITY zotero.preferences.quickCopy.siteEditor.outputFormat "Format Ouput">
+<!ENTITY zotero.preferences.quickCopy.siteEditor.locale "Language">
 <!ENTITY zotero.preferences.quickCopy.dragLimit "Matikan fitur Salin Cepat saat menarik lebih dari">
 
 <!ENTITY zotero.preferences.prefpane.cite "Mengutip">
@@ -124,8 +123,6 @@
 <!ENTITY zotero.preferences.cite.styles.styleManager.updated "Diperbarui">
 <!ENTITY zotero.preferences.cite.styles.styleManager.csl "CSL">
 <!ENTITY zotero.preferences.export.getAdditionalStyles "Dapatkan gaya tambahan">
-
-<!ENTITY zotero.preferences.prefpane.keys "Shortcut">
 
 <!ENTITY zotero.preferences.keys.openZotero "Buka/Tutup  Jendela Zotero">
 <!ENTITY zotero.preferences.keys.saveToZotero "Save to Zotero (address bar icon)">
@@ -148,6 +145,7 @@
 <!ENTITY zotero.preferences.proxies.desc_after_link "untuk informasi lebih lanjut.">
 <!ENTITY zotero.preferences.proxies.transparent "Aktifkan pengalihan proksi">
 <!ENTITY zotero.preferences.proxies.autoRecognize "Kenali secara automatis sumber-sumber yang terproksi">
+<!ENTITY zotero.preferences.proxies.showRedirectNotification "Show notification when redirecting through a proxy">
 <!ENTITY zotero.preferences.proxies.disableByDomain "Nonaktifkan pengalihan proksi ketika nama domain saya mengandung">
 <!ENTITY zotero.preferences.proxies.configured "Proksi Terkonfigurasi">
 <!ENTITY zotero.preferences.proxies.hostname "Nama Host">
@@ -164,6 +162,7 @@
 
 <!ENTITY zotero.preferences.prefpane.advanced "Lebih Lanjut">
 <!ENTITY zotero.preferences.advanced.filesAndFolders "Files and Folders">
+<!ENTITY zotero.preferences.advanced.keys "Shortcuts">
 
 <!ENTITY zotero.preferences.prefpane.locate "Temukan">
 <!ENTITY zotero.preferences.locate.locateEngineManager "Pengelola Mesin Pencarian Artikel">
@@ -204,6 +203,6 @@
 <!ENTITY zotero.preferences.debugOutputLogging.submitToServer "Kirimkan ke Server Zotero">
 
 <!ENTITY zotero.preferences.openAboutConfig "Buka about:config">
-<!ENTITY zotero.preferences.openCSLEdit "Buka editor CSL">
-<!ENTITY zotero.preferences.openCSLPreview "Buka preview CSL">
+<!ENTITY zotero.preferences.openCSLEdit "Open Style Editor">
+<!ENTITY zotero.preferences.openCSLPreview "Open Style Preview">
 <!ENTITY zotero.preferences.openAboutMemory "Open about:memory">

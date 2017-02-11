@@ -70,7 +70,7 @@ var Zotero_RecognizePDF = new function() {
 	 * @return {Promise} A promise resolved when PDF metadata has been retrieved
 	 */
 	this.recognize = function(file, libraryID, stopCheckCallback) {
-		const MAX_PAGES = 7;
+		const MAX_PAGES = 15;
 		var me = this;
 		
 		return _extractText(file, MAX_PAGES).then(function(lines) {
@@ -95,30 +95,34 @@ var Zotero_RecognizePDF = new function() {
 				// Look up DOI
 				Zotero.debug("RecognizePDF: Found DOI: "+doi);
 				
-				var translate = new Zotero.Translate.Search();
-				translate.setTranslator("11645bd1-0420-45c1-badb-53fb41eeb753");
-				translate.setSearch({"itemType":"journalArticle", "DOI":doi});
-				promise = _promiseTranslate(translate, libraryID);
+				var translateDOI = new Zotero.Translate.Search();
+				translateDOI.setTranslator("11645bd1-0420-45c1-badb-53fb41eeb753");
+				translateDOI.setSearch({"itemType":"journalArticle", "DOI":doi});
+				promise = _promiseTranslate(translateDOI, libraryID);
 			} else {
-				// Look for ISBNs if no DOI
-				var isbns = _findISBNs(allText);
-				if(isbns.length) {
-					Zotero.debug("RecognizePDF: Found ISBNs: " + isbns);
-					
-					var translate = new Zotero.Translate.Search();
-					translate.setTranslator("c73a4a8c-3ef1-4ec8-8229-7531ee384cc4"); 
-					translate.setSearch({"itemType":"book", "ISBN":isbns[0]});
-					promise = _promiseTranslate(translate, libraryID);
-				} else {
-					promise = Q.reject("No ISBN or DOI found");
-				}
+				promise = Q.reject("No DOI found in text");
 			}
 			
-			// If no DOI or ISBN, query Google Scholar
-			return promise.fail(function(error) {
-				Zotero.debug("RecognizePDF: "+error);
-				return me.GSFullTextSearch.findItem(lines, libraryID, stopCheckCallback);
-			});
+			return promise
+				// Look for ISBNs if no DOI
+				.fail(function(error) {
+					Zotero.debug("RecognizePDF: " + error);
+					var isbns = _findISBNs(allText);
+					if (isbns.length) {
+						Zotero.debug("RecognizePDF: Found ISBNs: " + isbns);
+						
+						var translate = new Zotero.Translate.Search();
+						translate.setSearch({"itemType":"book", "ISBN":isbns[0]});
+						return _promiseTranslate(translate, libraryID);
+					} else {
+						return Q.reject("No ISBN found in text.");
+					}
+				})
+				// If no DOI or ISBN, query Google Scholar
+				.fail(function(error) {
+					Zotero.debug("RecognizePDF: " + error);
+					return me.GSFullTextSearch.findItem(lines, libraryID, stopCheckCallback);
+				});
 		});
 	}
 	
@@ -135,13 +139,10 @@ var Zotero_RecognizePDF = new function() {
 			cacheFile.remove(false);
 		}
 		
-		var exec = Zotero.getZoteroDirectory();
-		exec.append(Zotero.Fulltext.pdfConverterFileName);
+		var {exec, args} = Zotero.Fulltext.getPDFConverterExecAndArgs();
+		args.push('-enc', 'UTF-8', '-nopgbrk', '-layout', '-l', pages, file.path, cacheFile.path);
 		
-		var args = ['-enc', 'UTF-8', '-nopgbrk', '-layout', '-l', pages];
-		args.push(file.path, cacheFile.path);
-		
-		Zotero.debug('RecognizePDF: Running pdftotext '+args.join(" "));
+		Zotero.debug("RecognizePDF: Running " + exec.path + " " + args.map(arg => "'" + arg + "'").join(" "));
 		
 		return Zotero.Utilities.Internal.exec(exec, args).then(function() {
 			if(!cacheFile.exists()) {
@@ -196,7 +197,10 @@ var Zotero_RecognizePDF = new function() {
 			if(success && translate.newItems.length) {
 				deferred.resolve(translate.newItems[0]);
 			} else {
-				deferred.reject("Translation with Google Scholar failed");
+				deferred.reject(translate.translator && translate.translator.length
+					? "Translation with " + translate.translator.map(t => t.label) + " failed"
+					: "Could not find a translator for given search item"
+				);
 			}
 		});
 		translate.translate(libraryID, false);
@@ -589,7 +593,11 @@ var Zotero_RecognizePDF = new function() {
 			const lineRe = /^[\s_]*([^\s]+(?: [^\s_]+)+)/;
 			var cleanedLines = [], cleanedLineLengths = [];
 			for(var i=0; i<lines.length && cleanedLines.length<100; i++) {
-				var m = lineRe.exec(lines[i]);
+				var m = lineRe.exec(
+					lines[i]
+					// Replace non-breaking spaces
+					.replace(/\xA0/g, ' ')
+				);
 				if(m && m[1].split(' ').length > 3) {
 					cleanedLines.push(m[1]);
 					cleanedLineLengths.push(m[1].length);
@@ -716,7 +724,10 @@ var Zotero_RecognizePDF = new function() {
 				throw new Zotero.Exception.Alert('recognizePDF.stopped');
 			}
 			
+			Zotero.debug("RecognizePDF: (" + xmlhttp.status + ") Got page with title " + xmlhttp.response.title);
+			
 			if(Zotero.Utilities.xpath(xmlhttp.response, "//form[@action='Captcha']").length) {
+				Zotero.debug("RecognizePDF: Found CAPTCHA on page.");
 				return _solveCaptcha(xmlhttp, tries);
 			}
 			return xmlhttp;
@@ -736,19 +747,24 @@ var Zotero_RecognizePDF = new function() {
 				throw new Zotero.Exception.Alert('recognizePDF.stopped');
 			}
 			
+			Zotero.debug("RecognizePDF: Checking for CAPTCHA on Google Scholar error page (" + e.status + ")");
+			
 			// Check for captcha on error page
 			if(e instanceof Zotero.HTTP.UnexpectedStatusException
 				&& (e.status == 403 || e.status == 503) && e.xmlhttp.response) {
 				if(_extractCaptchaFormData(e.xmlhttp.response)) {
+					Zotero.debug("RecognizePDF: CAPTCHA found");
 					return _solveCaptcha(e.xmlhttp, tries);
 				} else if(!dontClearCookies && e.xmlhttp.channel) { // Make sure we can obtain original URL
 					// AFAICT, for 403 errors, GS just says "sorry, try later",
 					// but if you clear cookies, you get a CAPTCHA
+					Zotero.debug("RecognizePDF: No CAPTCHA detected on page. Clearing cookies.");
 					if(!_clearGSCookies(e.xmlhttp.channel.originalURI.host)) {
 						//user said no or no cookies removed
 						throw new Zotero.Exception.Alert('recognizePDF.limit');
 					}
 					// Redo GET request
+					Zotero.debug("RecognizePDF: Reloading page after clearing cookies.");
 					return Zotero.HTTP.promise("GET", e.xmlhttp.channel.originalURI.spec, {"responseType":"document"})
 						.then(function(xmlhttp) {
 							return _checkCaptchaOK(xmlhttp, tries);
@@ -803,6 +819,7 @@ var Zotero_RecognizePDF = new function() {
 				throw new Zotero.Exception.Alert('recognizePDF.limit');
 			}
 			
+			Zotero.debug('RecognizePDF: User entered "' + io.dataOut.captcha + '" for CAPTCHA');
 			formData.input.captcha = io.dataOut.captcha;
 			var url = '', prop;
 			for(prop in formData.input) {

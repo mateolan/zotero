@@ -31,6 +31,7 @@ Zotero_Preferences.Advanced = {
 	
 	init: function () {
 		Zotero_Preferences.Debug_Output.init();
+		Zotero_Preferences.Keys.init();
 	},
 	
 	revealDataDirectory: function () {
@@ -624,7 +625,9 @@ Zotero_Preferences.Debug_Output = {
 		document.getElementById('debug-output-submit').disabled = true;
 		document.getElementById('debug-output-submit-progress').hidden = false;
 		
-		var url = "https://repo.zotero.org/repo/report?debug=1";
+		Components.utils.import("resource://zotero/config.js");
+		
+		var url = ZOTERO_CONFIG.REPOSITORY_URL + "report?debug=1";
 		var output = Zotero.Debug.get(
 			Zotero.Prefs.get('debug.store.submitSize'),
 			Zotero.Prefs.get('debug.store.submitLineLength')
@@ -727,9 +730,16 @@ Zotero_Preferences.Debug_Output = {
 				}
 			};
 			try {
-				req.sendAsBinary(data);
+				// Send binary data
+				let numBytes = data.length, ui8Data = new Uint8Array(numBytes);
+				for (let i = 0; i < numBytes; i++) {
+					ui8Data[i] = data.charCodeAt(i) & 0xff;
+				}
+				req.send(ui8Data);
 			}
 			catch (e) {
+				Zotero.debug(e, 1);
+				Components.utils.reportError(e);
 				ps.alert(
 					null,
 					Zotero.getString('general.error'),
@@ -806,6 +816,36 @@ Zotero_Preferences.Debug_Output = {
 	onUnload: function () {
 		if (this._timer) {
 			this._timer.cancel();
+		}
+	}
+};
+
+
+Zotero_Preferences.Keys = {
+	init: function () {
+		var rows = document.getElementById('zotero-prefpane-advanced-keys-tab').getElementsByTagName('row');
+		for (var i=0; i<rows.length; i++) {
+			// Display the appropriate modifier keys for the platform
+			rows[i].firstChild.nextSibling.value = Zotero.isMac ? Zotero.getString('general.keys.cmdShift') : Zotero.getString('general.keys.ctrlShift');
+		}
+		
+		var textboxes = document.getElementById('zotero-keys-rows').getElementsByTagName('textbox');
+		for (let i=0; i<textboxes.length; i++) {
+			let textbox = textboxes[i];
+			textbox.value = textbox.value.toUpperCase();
+			// .value takes care of the initial value, and this takes care of direct pref changes
+			// while the window is open
+			textbox.setAttribute('onsyncfrompreference', 'return Zotero_Preferences.Keys.capitalizePref(this.id)');
+			textbox.setAttribute('oninput', 'this.value = this.value.toUpperCase()');
+		}
+	},
+	
+	
+	capitalizePref: function (id) {
+		var elem = document.getElementById(id);
+		var pref = document.getElementById(elem.getAttribute('preference'));
+		if (pref.value) {
+			return pref.value.toUpperCase();
 		}
 	}
 };

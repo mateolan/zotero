@@ -753,7 +753,7 @@ Zotero.Sync.Runner = new function () {
 			errors = [];
 		}
 		
-		errors = [this.parseSyncError(e) for each(e in errors)];
+		errors = errors.map(e => this.parseSyncError(e));
 		_errorsByLibrary = {};
 		
 		var primaryError = this.getPrimaryError(errors);
@@ -787,7 +787,7 @@ Zotero.Sync.Runner = new function () {
 	
 	
 	this.getPrimaryError = function (errors) {
-		errors = [this.parseSyncError(e) for each(e in errors)];
+		errors = errors.map(e => this.parseSyncError(e));
 		
 		// Set highest priority error as the primary (sync error icon)
 		var errorModes = {
@@ -956,7 +956,7 @@ Zotero.Sync.Runner = new function () {
 			
 			var panel = Zotero.Sync.Runner.updateErrorPanel(doc, errors);
 			
-			panel.openPopup(this, "after_end", 4, 0, false, false);
+			panel.openPopup(this, "after_end", 15, 0, false, false);
 		}
 	}
 	
@@ -1025,7 +1025,10 @@ Zotero.Sync.Runner = new function () {
 				
 				var button = doc.createElement('button');
 				button.setAttribute('label', buttonText);
-				button.onclick = buttonCallback;
+				button.onclick = function () {
+					buttonCallback.call(this);
+					panel.hidePopup();
+				}
 				buttons.appendChild(button);
 			}
 			
@@ -1229,10 +1232,10 @@ Zotero.Sync.Server = new function () {
 		}
 		
 		Zotero.debug('Getting Zotero sync password');
-		var loginManager = Components.classes["@mozilla.org/login-manager;1"]
-								.getService(Components.interfaces.nsILoginManager);
 		try {
-			var logins = loginManager.findLogins({}, _loginManagerHost, _loginManagerURL, null);
+			var loginManager = Components.classes["@mozilla.org/login-manager;1"]
+									.getService(Components.interfaces.nsILoginManager);
+			var logins = loginManager.findLogins({}, _loginManagerHost, null, _loginManagerRealm);
 		}
 		catch (e) {
 			Zotero.debug(e);
@@ -1262,6 +1265,18 @@ Zotero.Sync.Server = new function () {
 			}
 		}
 		
+		// Pre-4.0.28.5 format, broken for findLogins and removeLogin in Fx41,
+		var logins = loginManager.findLogins({}, _loginManagerHost, "", null);
+		for (var i = 0; i < logins.length; i++) {
+			if (logins[i].username == username
+					&& logins[i].formSubmitURL == "Zotero Sync Server") {
+				_cachedCredentials = {
+					username: username,
+					password: logins[i].password
+				};
+				return logins[i].password;
+			}
+		}
 		return '';
 	});
 	
@@ -1270,10 +1285,28 @@ Zotero.Sync.Server = new function () {
 		
 		var loginManager = Components.classes["@mozilla.org/login-manager;1"]
 								.getService(Components.interfaces.nsILoginManager);
-		var logins = loginManager.findLogins({}, _loginManagerHost, _loginManagerURL, null);
+		
+		var logins = loginManager.findLogins({}, _loginManagerHost, null, _loginManagerRealm);
 		for (var i = 0; i < logins.length; i++) {
 			Zotero.debug('Clearing Zotero sync credentials');
-			loginManager.removeLogin(logins[i]);
+			if (logins[i].httpRealm == _loginManagerRealm) {
+				loginManager.removeLogin(logins[i]);
+			}
+			break;
+		}
+		
+		// Pre-4.0.28.5 format, broken for findLogins in Fx41
+		logins = loginManager.findLogins({}, _loginManagerHost, "", null);
+		for (var i = 0; i < logins.length; i++) {
+			Zotero.debug('Clearing old Zotero sync credentials');
+			if (logins[i].formSubmitURL == "Zotero Sync Server") {
+				try {
+					loginManager.removeLogin(logins[i]);
+				}
+				catch (e) {
+					Zotero.logError(e);
+				}
+			}
 			break;
 		}
 		
@@ -1289,12 +1322,11 @@ Zotero.Sync.Server = new function () {
 		}
 		
 		if (password) {
+			Zotero.debug('Setting Zotero sync password');
 			var nsLoginInfo = new Components.Constructor("@mozilla.org/login-manager/loginInfo;1",
 				Components.interfaces.nsILoginInfo, "init");
-			
-			Zotero.debug('Setting Zotero sync password');
-			var loginInfo = new nsLoginInfo(_loginManagerHost, _loginManagerURL,
-				null, username, password, "", "");
+			var loginInfo = new nsLoginInfo(_loginManagerHost, null,
+				_loginManagerRealm, username, password, "", "");
 			loginManager.addLogin(loginInfo);
 			_cachedCredentials = {
 				username: username,
@@ -1329,7 +1361,7 @@ Zotero.Sync.Server = new function () {
 	this.apiVersion = 9;
 	
 	var _loginManagerHost = 'chrome://zotero';
-	var _loginManagerURL = 'Zotero Sync Server';
+	var _loginManagerRealm = 'Zotero Sync Server';
 	
 	var _serverURL = ZOTERO_CONFIG.SYNC_URL;
 	
@@ -1627,9 +1659,7 @@ Zotero.Sync.Server = new function () {
 					_error(e);
 				}
 				
-				Components.utils.import("resource://gre/modules/Task.jsm");
-				
-				Task.spawn(Zotero.Sync.Server.Data.processUpdatedXML(
+				var result = Q.async(Zotero.Sync.Server.Data.processUpdatedXML(
 					responseNode.getElementsByTagName('updated')[0],
 					lastLocalSyncDate,
 					syncSession,
@@ -1803,7 +1833,12 @@ Zotero.Sync.Server = new function () {
 									}
 								};
 								try {
-									req.sendAsBinary(data);
+									// Send binary data
+									let numBytes = data.length, ui8Data = new Uint8Array(numBytes);
+									for (let i = 0; i < numBytes; i++) {
+										ui8Data[i] = data.charCodeAt(i) & 0xff;
+									}
+									req.send(ui8Data);
 								}
 								catch (e) {
 									_error(e);
@@ -1838,13 +1873,11 @@ Zotero.Sync.Server = new function () {
 							Zotero.HTTP.doPost(url, body, uploadCallback);
 						}
 					}
-				))
-				.then(
-					null,
-					function (e) {
-						errorHandler(e);
-					}
-				);
+				))();
+				
+				if (Q.isPromise(result)) {
+					result.catch(errorHandler);
+				}
 			}
 			catch (e) {
 				_error(e);
@@ -1925,6 +1958,9 @@ Zotero.Sync.Server = new function () {
 		sql = "INSERT INTO version VALUES ('syncdeletelog', ?)";
 		Zotero.DB.query(sql, Zotero.Date.getUnixTimestamp());
 		
+		var sql = "UPDATE syncedSettings SET synced=0";
+		Zotero.DB.query(sql);
+		
 		Zotero.DB.commitTransaction();
 	}
 	
@@ -1976,7 +2012,7 @@ Zotero.Sync.Server = new function () {
 						catch (e) {
 							Zotero.debug(e);
 						}
-						var kbURL = 'http://zotero.org/support/kb/ssl_certificate_error';
+						var kbURL = 'https://zotero.org/support/kb/ssl_certificate_error';
 						_error(Zotero.getString('sync.storage.error.webdav.sslCertificateError', host) + "\n\n"
 							+ Zotero.getString('general.seeForMoreInformation', kbURL),
 							false, noReloadOnFailure);
@@ -2105,7 +2141,19 @@ Zotero.Sync.Server = new function () {
 					var background = Zotero.Sync.Runner.background;
 					setTimeout(function () {
 						var libraryID = parseInt(firstChild.getAttribute('libraryID'));
-						var group = Zotero.Groups.getByLibraryID(libraryID);
+						
+						try {
+							var group = Zotero.Groups.getByLibraryID(libraryID);
+						}
+						catch (e) {
+							// Not sure how this is possible, but it's affecting some people
+							// TODO: Clean up in schema updates with FK check
+							if (!Zotero.Libraries.exists(libraryID)) {
+								let sql = "DELETE FROM syncedSettings WHERE libraryID=?";
+								Zotero.DB.query(sql, libraryID);
+								return;
+							}
+						}
 						
 						var ps = Components.classes["@mozilla.org/embedcomp/prompt-service;1"]
 												.getService(Components.interfaces.nsIPromptService);
@@ -2131,6 +2179,42 @@ Zotero.Sync.Server = new function () {
 							return;
 						}
 					}, 1);
+					break;
+				
+				case 'NOTE_TOO_LONG':
+					if (!Zotero.Sync.Runner.background) {
+						let libraryKey = xmlhttp.responseXML.firstChild.getElementsByTagName('item');
+						if (libraryKey.length) {
+							let [libraryID, key] = libraryKey[0].textContent.split('/');
+							if (Zotero.Libraries.getType(libraryID) == 'user') {
+								libraryID = null;
+							}
+							let item = Zotero.Items.getByLibraryAndKey(libraryID, key);
+							if (item) {
+								let msg = xmlhttp.responseXML.firstChild.getElementsByTagName('error')[0].textContent;
+								let e = new Zotero.Error(
+									msg,
+									0,
+									{
+										dialogText: msg,
+										dialogButtonText: Zotero.getString('pane.items.showItemInLibrary'),
+										dialogButtonCallback: function () {
+											var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]
+												.getService(Components.interfaces.nsIWindowMediator);
+											var win = wm.getMostRecentWindow("navigator:browser");
+											win.ZoteroPane.selectItem(item.id);
+										}
+									}
+								);
+								_error(e);
+							}
+							else {
+								let msg = "Long note " + libraryKey[0].textContent + " not found!";
+								Zotero.debug(msg, 1);
+								Components.utils.reportError(msg);
+							}
+						}
+					}
 					break;
 				
 				case 'TAG_TOO_LONG':
@@ -2420,7 +2504,7 @@ Zotero.Sync.Server = new function () {
 	
 	
 	function _error(e, extraInfo, skipReload) {
-		if (e.name && e.name == 'ZOTERO_ERROR') {
+		if (e instanceof Zotero.Error) {
 			switch (e.error) {
 				case Zotero.Error.ERROR_MISSING_OBJECT:
 				case Zotero.Error.ERROR_FULL_SYNC_REQUIRED:
@@ -2508,6 +2592,7 @@ Zotero.Sync.Server = new function () {
 		}
 		
 		Zotero.debug(e, 1);
+		Components.utils.reportError(e);
 		
 		_syncInProgress = false;
 		Zotero.DB.rollbackAllTransactions();

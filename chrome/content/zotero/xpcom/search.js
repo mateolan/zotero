@@ -36,7 +36,7 @@ Zotero.Search = function() {
 Zotero.Search.prototype._init = function () {
 	// Public members for access by public methods -- do not access directly
 	this._id = null;
-	this._libraryID = null;
+	this._libraryID; // TEMP: libraryIDInt
 	this._key = null;
 	this._name = null;
 	this._dateAdded = null;
@@ -114,7 +114,7 @@ Zotero.Search.prototype._set = function (field, val) {
 			return;
 		
 		case 'name':
-			val = Zotero.Utilities.trim(val);
+			val = Zotero.Utilities.trim(val).normalize();
 			break;
 	}
 	
@@ -290,7 +290,7 @@ Zotero.Search.prototype.save = function(fixGaps) {
 			this._changed.dateModified ?
 				this.dateModified : Zotero.DB.transactionDateTime,
 			Zotero.DB.transactionDateTime,
-			this.libraryID ? this.libraryID : this.libraryID,
+			this.libraryID ? this.libraryID : null,
 			key
 		];
 		
@@ -420,6 +420,8 @@ Zotero.Search.prototype.addCondition = function(condition, operator, value, requ
 			if (condition == 'quicksearch-titleCreatorYear') {
 				this.addCondition('title', operator, part.text, false);
 				this.addCondition('publicationTitle', operator, part.text, false);
+				this.addCondition('shortTitle', operator, part.text, false);
+				this.addCondition('court', operator, part.text, false);
 				this.addCondition('year', operator, part.text, false);
 			}
 			else {
@@ -481,6 +483,8 @@ Zotero.Search.prototype.addCondition = function(condition, operator, value, requ
 	
 	var [condition, mode] = Zotero.SearchConditions.parseCondition(condition);
 	
+	if (typeof value == 'string') value = value.normalize();
+	
 	this._conditions[searchConditionID] = {
 		id: searchConditionID,
 		condition: condition,
@@ -519,6 +523,8 @@ Zotero.Search.prototype.updateCondition = function(searchConditionID, condition,
 	}
 	
 	var [condition, mode] = Zotero.SearchConditions.parseCondition(condition);
+	
+	if (typeof value == 'string') value = value.normalize();
 	
 	this._conditions[searchConditionID] = {
 		id: parseInt(searchConditionID),
@@ -1131,6 +1137,23 @@ Zotero.Search.prototype._buildQuery = function(){
 			+ "(SELECT itemID FROM itemAttachments WHERE sourceItemID IS NOT NULL "
 			+ "UNION SELECT itemID FROM itemNotes WHERE sourceItemID IS NOT NULL)"
 			+ ")";
+	}
+	
+	// Limit to library search belongs to
+	//
+	// This is equivalent to adding libraryID as a search condition,
+	// but it works with ANY
+	if (this.libraryID !== undefined) {
+		sql += " AND (itemID IN (SELECT itemID FROM items WHERE libraryID";
+		// TEMP: libraryIDInt
+		if (this.libraryID) {
+			sql += "=?";
+			sqlParams.push(this.libraryID);
+		}
+		else {
+			sql += " IS NULL";
+		}
+		sql += "))";
 	}
 	
 	if (this._hasPrimaryConditions) {
@@ -1749,6 +1772,7 @@ Zotero.Searches = new function(){
 		for each(var row in rows) {
 			var search = new Zotero.Search;
 			search.id = row.id;
+			search.libraryID = libraryID;
 			searches.push(search);
 		}
 		return searches;
@@ -2185,7 +2209,7 @@ Zotero.SearchConditions = new function(){
 				},
 				table: 'itemData',
 				field: 'value',
-				aliases: ['pages', 'section', 'seriesNumber','issue'],
+				aliases: ['pages', 'numPages', 'numberOfVolumes', 'section', 'seriesNumber','issue'],
 				template: true // mark for special handling
 			},
 			
@@ -2274,10 +2298,10 @@ Zotero.SearchConditions = new function(){
 			_conditions[conditions[i]['name']] = conditions[i];
 		}
 		
-		var sortKeys = [];
-		var sortValues = [];
+		_standardConditions = [];
 		
 		var baseMappedFields = Zotero.ItemFields.getBaseMappedFields();
+		var locale = Zotero.locale;
 		
 		// Separate standard conditions for menu display
 		for (var i in _conditions){
@@ -2299,23 +2323,26 @@ Zotero.SearchConditions = new function(){
 				continue;
 			}
 			
-			var localized = self.getLocalizedName(i);
+			let localized = self.getLocalizedName(i);
+			// Hack to use a different name for "issue" in French locale,
+			// where 'number' and 'issue' are translated the same
+			// https://forums.zotero.org/discussion/14942/
+			if (fieldID == 5 && locale.substr(0, 2).toLowerCase() == 'fr') {
+				localized = "Num\u00E9ro (p\u00E9riodique)";
+			}
 			
-			sortKeys.push(localized);
-			sortValues[localized] = {
+			_standardConditions.push({
 				name: i,
 				localized: localized,
 				operators: _conditions[i]['operators'],
 				flags: _conditions[i]['flags']
-			};
+			});
 		}
 		
-		// Alphabetize by localized name
-		// TODO: locale collation sort
-		sortKeys = sortKeys.sort();
-		for each(var i in sortKeys){
-			_standardConditions.push(sortValues[i]);
-		}
+		var collation = Zotero.getLocaleCollation();
+		_standardConditions.sort(function(a, b) {
+			return collation.compareString(1, a.localized, b.localized);
+		});
 		
 		_initialized = true;
 	}
@@ -2380,6 +2407,7 @@ Zotero.SearchConditions = new function(){
 			return Zotero.getString('searchConditions.' + str)
 		}
 		catch (e) {
+			Zotero.debug("String not found for searchConditions." + str, 2);
 			return Zotero.ItemFields.getLocalizedString(null, str);
 		}
 	}

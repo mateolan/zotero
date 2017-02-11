@@ -71,19 +71,25 @@ Zotero.Cite = {
 	 * @param {String} format The format of the output (html, text, or rtf)
 	 * @return {String} Bibliography or item list in specified format
 	 */
-	"makeFormattedBibliographyOrCitationList":function(style, items, format, asCitationList) {
-		var cslEngine = style.getCiteProc();
+	"makeFormattedBibliographyOrCitationList":function(cslEngine, items, format, asCitationList) {
 		cslEngine.setOutputFormat(format);
-		cslEngine.updateItems([item.id for each(item in items)]);
-				
+		cslEngine.updateItems(items.map(item => item.id));
+		 		
 		if(!asCitationList) {
 			var bibliography = Zotero.Cite.makeFormattedBibliography(cslEngine, format);
 			if(bibliography) return bibliography;
 		}
 		
-		var styleClass = style.class;
-		var citations = [cslEngine.appendCitationCluster({"citationItems":[{"id":item.id}], "properties":{}}, true)[0][1]
-			for each(item in items)];
+		var styleClass = cslEngine.opt.class;
+		var citations=[];
+		for (var i=0, ilen=items.length; i<ilen; i++) {
+			var item = items[i];
+			var outList = cslEngine.appendCitationCluster({"citationItems":[{"id":item.id}], "properties":{}}, true);
+			for (var j=0, jlen=outList.length; j<jlen; j++) {
+				var citationPos = outList[j][0];
+				citations[citationPos] = outList[j][1];
+			}
+		}
 		
 		if(styleClass == "note") {
 			if(format == "html") {
@@ -291,7 +297,7 @@ Zotero.Cite = {
 		var slashIndex;
 		
 		if(id instanceof Array) {
-			return [Zotero.Cite.getItem(anId) for each(anId in id)];
+			return id.map(anId => Zotero.Cite.getItem(anId));
 		} else if(typeof id === "string" && (slashIndex = id.indexOf("/")) !== -1) {		
 			var sessionID = id.substr(0, slashIndex),
 				session = Zotero.Integration.sessions[sessionID],
@@ -523,100 +529,23 @@ Zotero.Cite.System.prototype = {
 			throw "Zotero.Cite.System.retrieveItem called on non-item "+item;
 		}
 		
-		// don't return URL or accessed information for journal articles if a
-		// pages field exists
-		var itemType = Zotero.ItemTypes.getName(zoteroItem.itemTypeID);
-		var cslType = CSL_TYPE_MAPPINGS[itemType];
-		if(!cslType) cslType = "article";
-		var ignoreURL = ((zoteroItem.getField("accessDate", true, true) || zoteroItem.getField("url", true, true)) &&
-				["journalArticle", "newspaperArticle", "magazineArticle"].indexOf(itemType) !== -1
+		var cslItem = Zotero.Utilities.itemToCSLJSON(zoteroItem);
+		
+		// TEMP: citeproc-js currently expects the id property to be the item DB id
+		cslItem.id = zoteroItem.id;
+		
+		if (!Zotero.Prefs.get("export.citePaperJournalArticleURL")) {
+			var itemType = Zotero.ItemTypes.getName(zoteroItem.itemTypeID);
+			// don't return URL or accessed information for journal articles if a
+			// pages field exists
+			if (["journalArticle", "newspaperArticle", "magazineArticle"].indexOf(itemType) !== -1
 				&& zoteroItem.getField("pages")
-				&& !Zotero.Prefs.get("export.citePaperJournalArticleURL"));
-		
-		var cslItem = {
-			'id':zoteroItem.id,
-			'type':cslType
-		};
-		
-		// get all text variables (there must be a better way)
-		// TODO: does citeproc-js permit short forms?
-		for(var variable in CSL_TEXT_MAPPINGS) {
-			var fields = CSL_TEXT_MAPPINGS[variable];
-			if(variable == "URL" && ignoreURL) continue;
-			for each(var field in fields) {
-				var value = zoteroItem.getField(field, false, true).toString();
-				if(value != "") {
-					// Strip enclosing quotes
-					if(value.match(/^".+"$/)) {
-						value = value.substr(1, value.length-2);
-					}
-					cslItem[variable] = value;
-					break;
-				}
+			) {
+				delete cslItem.URL;
+				delete cslItem.accessed;
 			}
 		}
 		
-		// separate name variables
-		var authorID = Zotero.CreatorTypes.getPrimaryIDForType(zoteroItem.itemTypeID);
-		var creators = zoteroItem.getCreators();
-		for each(var creator in creators) {
-			if(creator.creatorTypeID == authorID) {
-				var creatorType = "author";
-			} else {
-				var creatorType = Zotero.CreatorTypes.getName(creator.creatorTypeID);
-			}
-			
-			var creatorType = CSL_NAMES_MAPPINGS[creatorType];
-			if(!creatorType) continue;
-			
-			var nameObj = {'family':creator.ref.lastName, 'given':creator.ref.firstName};
-			
-			if(cslItem[creatorType]) {
-				cslItem[creatorType].push(nameObj);
-			} else {
-				cslItem[creatorType] = [nameObj];
-			}
-		}
-		
-		// get date variables
-		for(var variable in CSL_DATE_MAPPINGS) {
-			var date = zoteroItem.getField(CSL_DATE_MAPPINGS[variable], false, true);
-			if(date) {
-				var dateObj = Zotero.Date.strToDate(date);
-				// otherwise, use date-parts
-				var dateParts = [];
-				if(dateObj.year) {
-					// add year, month, and day, if they exist
-					dateParts.push(dateObj.year);
-					if(dateObj.month !== undefined) {
-						dateParts.push(dateObj.month+1);
-						if(dateObj.day) {
-							dateParts.push(dateObj.day);
-						}
-					}
-					cslItem[variable] = {"date-parts":[dateParts]};
-					
-					// if no month, use season as month
-					if(dateObj.part && !dateObj.month) {
-						cslItem[variable].season = dateObj.part;
-					}
-				} else {
-					// if no year, pass date literally
-					cslItem[variable] = {"literal":date};
-				}
-			}
-		}
-
-		// extract PMID
-		var extra = zoteroItem.getField("extra", false, true);
-		if(typeof extra === "string") {
-			var m = /(?:^|\n)PMID:\s*([0-9]+)/.exec(extra);
-			if(m) cslItem.PMID = m[1];
-			m = /(?:^|\n)PMCID:\s*((?:PMC)?[0-9]+)/.exec(extra);
-			if(m) cslItem.PMCID = m[1];
-		}
-		
-		//this._cache[zoteroItem.id] = cslItem;
 		return cslItem;
 	},
 

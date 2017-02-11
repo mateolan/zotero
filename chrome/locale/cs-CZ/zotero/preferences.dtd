@@ -12,8 +12,6 @@
 <!ENTITY zotero.preferences.showIn.browserPane "Panel prohlížeče">
 <!ENTITY zotero.preferences.showIn.separateTab "Samostatný panel">
 <!ENTITY zotero.preferences.showIn.appTab "Panel aplikace">
-<!ENTITY zotero.preferences.statusBarIcon "Ikona ve stavovém řádku:">
-<!ENTITY zotero.preferences.statusBarIcon.none "Žádná">
 <!ENTITY zotero.preferences.fontSize "Velikost písma:">
 <!ENTITY zotero.preferences.fontSize.small "Malá">
 <!ENTITY zotero.preferences.fontSize.medium "Střední">
@@ -109,6 +107,7 @@
 <!ENTITY zotero.preferences.quickCopy.siteEditor.domainPath "Doména/Cesta">
 <!ENTITY zotero.preferences.quickCopy.siteEditor.domainPath.example "(např. wikipedia.org)">
 <!ENTITY zotero.preferences.quickCopy.siteEditor.outputFormat "Výstupní formát">
+<!ENTITY zotero.preferences.quickCopy.siteEditor.locale "Jazyk">
 <!ENTITY zotero.preferences.quickCopy.dragLimit "Vypnout Rychlé kopírování, pokud je označeno více než">
 
 <!ENTITY zotero.preferences.prefpane.cite "Citování">
@@ -124,8 +123,6 @@
 <!ENTITY zotero.preferences.cite.styles.styleManager.updated "Aktualizováno">
 <!ENTITY zotero.preferences.cite.styles.styleManager.csl "CSL">
 <!ENTITY zotero.preferences.export.getAdditionalStyles "Získat další styly...">
-
-<!ENTITY zotero.preferences.prefpane.keys "Klávesové zkratky">
 
 <!ENTITY zotero.preferences.keys.openZotero "Otevřít/Zavřít Zotero panel">
 <!ENTITY zotero.preferences.keys.saveToZotero "Uložit do Zotera (ikona v adresním řádku)">
@@ -148,6 +145,7 @@
 <!ENTITY zotero.preferences.proxies.desc_after_link ".">
 <!ENTITY zotero.preferences.proxies.transparent "Automaticky přesměrovávat požadavky skrz dříve použité proxy servery.">
 <!ENTITY zotero.preferences.proxies.autoRecognize "Automaticky rozpoznávat proxované zdroje">
+<!ENTITY zotero.preferences.proxies.showRedirectNotification "Zobrazovat upozornění při přesměrování přes proxy">
 <!ENTITY zotero.preferences.proxies.disableByDomain "Vypnout proxy přesměrování, pokud má doména obsahuje ">
 <!ENTITY zotero.preferences.proxies.configured "Nastavené proxy servery">
 <!ENTITY zotero.preferences.proxies.hostname "Hostname">
@@ -164,6 +162,7 @@
 
 <!ENTITY zotero.preferences.prefpane.advanced "Pokročilé">
 <!ENTITY zotero.preferences.advanced.filesAndFolders "Soubory a Složky">
+<!ENTITY zotero.preferences.advanced.keys "Klávesové zkratky">
 
 <!ENTITY zotero.preferences.prefpane.locate "Najít">
 <!ENTITY zotero.preferences.locate.locateEngineManager "Správce mechanismu pro vyhledávání článků">
@@ -204,6 +203,6 @@
 <!ENTITY zotero.preferences.debugOutputLogging.submitToServer "Odeslat na Zotero Server">
 
 <!ENTITY zotero.preferences.openAboutConfig "Otevřít about:config">
-<!ENTITY zotero.preferences.openCSLEdit "Otevřít editor CSL">
-<!ENTITY zotero.preferences.openCSLPreview "Otevřít náhled CSL">
+<!ENTITY zotero.preferences.openCSLEdit "Otevřít Editor stylů">
+<!ENTITY zotero.preferences.openCSLPreview "Otevřít Náhled stylů">
 <!ENTITY zotero.preferences.openAboutMemory "Otevřít about:memory">

@@ -6,9 +6,11 @@
 <!ENTITY zotero.general.delete "Löschen">
 <!ENTITY zotero.general.ok "OK">
 <!ENTITY zotero.general.cancel "Abbrechen">
+<!ENTITY zotero.general.refresh "Aktualisieren">
+<!ENTITY zotero.general.saveAs "Speichern als...">
 
 <!ENTITY zotero.errorReport.title "Zotero Fehlerbericht">
-<!ENTITY zotero.errorReport.unrelatedMessages "Dieses Fehlerprotokoll kann unter Umständen Nachrichten enthalten, die nicht mit Zotero in Verbindung stehen.">
+<!ENTITY zotero.errorReport.unrelatedMessages "Unter Umständen sind Nachrichten enthalten, die nicht mit Zotero in Verbindung stehen.">
 <!ENTITY zotero.errorReport.submissionInProgress "Bitte warten Sie, während der Fehlerbericht übermittelt wird.">
 <!ENTITY zotero.errorReport.submitted "Der Fehlerbericht wurde übermittelt.">
 <!ENTITY zotero.errorReport.reportID "Bericht-ID:">
@@ -45,7 +47,7 @@
 <!ENTITY zotero.collections.showUnfiledItems "Einträge ohne Sammlung anzeigen">
 
 <!ENTITY zotero.items.itemType "Eintragsart">
-<!ENTITY zotero.items.type_column "Item Type">
+<!ENTITY zotero.items.type_column "Eintragsart">
 <!ENTITY zotero.items.title_column "Titel">
 <!ENTITY zotero.items.creator_column "Ersteller">
 <!ENTITY zotero.items.date_column "Datum">
@@ -65,7 +67,7 @@
 <!ENTITY zotero.items.archiveLocation_column "Standort im Archiv">
 <!ENTITY zotero.items.place_column "Ort">
 <!ENTITY zotero.items.volume_column "Volumen">
-<!ENTITY zotero.items.edition_column "Ausgabe">
+<!ENTITY zotero.items.edition_column "Auflage">
 <!ENTITY zotero.items.pages_column "Seiten">
 <!ENTITY zotero.items.issue_column "Ausgabe">
 <!ENTITY zotero.items.series_column "Reihe">
@@ -124,6 +126,8 @@
 <!ENTITY zotero.item.textTransform.titlecase "englische Titel-Großschreibung">
 <!ENTITY zotero.item.textTransform.sentencecase "englische Satz-Großschreibung">
 <!ENTITY zotero.item.creatorTransform.nameSwap "Vorname/Nachname tauschen">
+<!ENTITY zotero.item.viewOnline "Online anzeigen">
+<!ENTITY zotero.item.copyAsURL "Als URL kopieren">
 
 <!ENTITY zotero.toolbar.newNote "Neue Notiz">
 <!ENTITY zotero.toolbar.note.standalone "Neue eigenständige Notiz">
@@ -161,6 +165,7 @@
 
 <!ENTITY zotero.bibliography.title "Literaturverzeichnis erstellen">
 <!ENTITY zotero.bibliography.style.label "Zitierstil:">
+<!ENTITY zotero.bibliography.locale.label "Sprache:">
 <!ENTITY zotero.bibliography.outputMode "Ausgabemodus:">
 <!ENTITY zotero.bibliography.bibliography "Bibliografie">
 <!ENTITY zotero.bibliography.outputMethod "Ausgabemethode:">
@@ -185,9 +190,6 @@
 
 <!ENTITY zotero.citation.keepSorted.label "Quellen sortiert halten">
 
-<!ENTITY zotero.citation.page "Seite">
-<!ENTITY zotero.citation.paragraph "Absatz">
-<!ENTITY zotero.citation.line "Zeile">
 <!ENTITY zotero.citation.suppressAuthor.label "Autor unterdrücken">
 <!ENTITY zotero.citation.prefix.label "Präfix:">
 <!ENTITY zotero.citation.suffix.label "Suffix:">
@@ -284,3 +286,7 @@
 <!ENTITY zotero.downloadManager.label "In Zotero speichern">
 <!ENTITY zotero.downloadManager.saveToLibrary.description "Anhänge können in der aktuell gewählten Bibliothek nicht gespeichert werden. Der Eintrag wird stattdessen in Ihrer Bibliothek gespeichert.">
 <!ENTITY zotero.downloadManager.noPDFTools.description "Um diese Funktion zu nutzen, müssen Sie zuerst die PDF-Werkzeuge in den Zotero-Einstellungen installieren.">
+
+<!ENTITY zotero.attachLink.title "Link zu einer URI anhängen">
+<!ENTITY zotero.attachLink.label.link "Link:">
+<!ENTITY zotero.attachLink.label.title "Titel:">

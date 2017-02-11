@@ -201,11 +201,12 @@ Zotero.HTTP = new function() {
 	 * @param {Function} 		onDone			Callback to be executed upon request completion
 	 * @param {String} 		responseCharset	Character set to force on the response
 	 * @param {Zotero.CookieSandbox} [cookieSandbox] Cookie sandbox object
+	 * @param {Object} requestHeaders HTTP headers to include with request
 	 * @return {XMLHttpRequest} The XMLHttpRequest object if the request was sent, or
 	 *     false if the browser is offline
 	 * @deprecated Use {@link Zotero.HTTP.promise}
 	 */
-	this.doGet = function(url, onDone, responseCharset, cookieSandbox) {
+	this.doGet = function(url, onDone, responseCharset, cookieSandbox, requestHeaders) {
 		if (url instanceof Components.interfaces.nsIURI) {
 			// Don't display password in console
 			var disp = this.getDisplayURI(url);
@@ -234,6 +235,13 @@ Zotero.HTTP = new function() {
 		// Set charset
 		if (responseCharset) {
 			channel.contentCharset = responseCharset;
+		}
+		
+		// Set request headers
+		if (requestHeaders) {
+			for (var header in requestHeaders) {
+				xmlhttp.setRequestHeader(header, requestHeaders[header]);
+			}
 		}
 	
 		// Don't cache GET requests
@@ -990,17 +998,11 @@ Zotero.HTTP = new function() {
 	 	if(typeof url !== "object") {
 	 		url = Services.io.newURI(url, null, null).QueryInterface(Components.interfaces.nsIURL);
 		}
-
-		var parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
-             .createInstance(Components.interfaces.nsIDOMParser);
-		var secMan = Components.classes["@mozilla.org/scriptsecuritymanager;1"]
-			.getService(Components.interfaces.nsIScriptSecurityManager);
-		parser.init(secMan.getCodebasePrincipal(url), url, url);
 		return Zotero.Translate.DOMWrapper.wrap(doc, {
-			"documentURI":{ "enumerable":true, "value":url.spec },
-			"URL":{ "enumerable":true, "value":url.spec },
-			"location":{ "enumerable":true, "value":(new Zotero.HTTP.Location(url)) },
-			"defaultView":{ "enumerable":true, "value":(new Zotero.HTTP.Window(url)) }
+			"documentURI":url.spec,
+			"URL":url.spec,
+			"location":new Zotero.HTTP.Location(url),
+			"defaultView":new Zotero.HTTP.Window(url)
 		});
 	 }
 }

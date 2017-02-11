@@ -341,7 +341,9 @@ var Zotero_RTFScan = new function() {
 				var m = initialRe.exec(firstName);
 				if(m) {
 					var initials = firstName.replace(/[^A-Z]/g, "");
-					var itemInitials = [name[0].toUpperCase() for each (name in itemCreator.ref.firstName.split(/ +/g))].join("");
+					var itemInitials = itemCreator.firstName.split(/ +/g)
+						.map(name => name[0].toUpperCase())
+						.join("");
 					if(initials != itemInitials) return false;
 				} else {
 					// not all initials; verify that the first name matches
@@ -495,8 +497,9 @@ var Zotero_RTFScan = new function() {
 	
 	function _formatRTF() {
 		// load style and create ItemSet with all items
-		var zStyle = Zotero.Styles.get(document.getElementById("style-listbox").selectedItem.value)
-		var style = zStyle.getCiteProc();
+		var zStyle = Zotero.Styles.get(document.getElementById("style-listbox").value)
+		var locale = document.getElementById("locale-menu").value;
+		var style = zStyle.getCiteProc(locale);
 		style.setOutputFormat("rtf");
 		var isNote = style.class == "note";
 		
@@ -527,7 +530,7 @@ var Zotero_RTFScan = new function() {
 		}
 		Zotero.debug(cslCitations);
 		
-		itemIDs = [itemID for(itemID in itemIDs)];
+		itemIDs = Object.keys(itemIDs);
 		Zotero.debug(itemIDs);
 		
 		// prepare the list of rendered citations
@@ -596,6 +599,11 @@ var Zotero_RTFScan = new function() {
 		}
 		
 		Zotero.File.putContents(outputFile, contents);
+		
+		// save locale
+		if (!document.getElementById("locale-menu").disabled) {
+			Zotero.Prefs.set("export.lastLocale", locale);
+		}
 		
 		document.documentElement.canAdvance = true;
 		document.documentElement.advance();

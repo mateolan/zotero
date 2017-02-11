@@ -101,6 +101,8 @@ Zotero.Duplicates.prototype._getObjectFromID = function (id) {
 
 
 Zotero.Duplicates.prototype._findDuplicates = function () {
+	Zotero.debug("Finding duplicates");
+	
 	var start = Date.now();
 	
 	var self = this;
@@ -170,7 +172,9 @@ Zotero.Duplicates.prototype._findDuplicates = function () {
 				}
 				// If no comparison function, check for exact match
 				else {
-					if (rows[i].value !== rows[j].value) {
+					if (!rows[i].value || !rows[j].value
+						|| (rows[i].value !== rows[j].value)
+					) {
 						break;
 					}
 				}
@@ -205,8 +209,8 @@ Zotero.Duplicates.prototype._findDuplicates = function () {
 	var isbnCache = {};
 	if (rows) {
 		for each(var row in rows) {
-			row.value = (row.value+'').replace(/[^\dX]+/ig, '').toUpperCase(); //ignore formatting
-			isbnCache[row.itemID] = row.value;
+			row.value = Zotero.Utilities.cleanISBN('' + row.value);
+			if (row.value) isbnCache[row.itemID] = row.value;
 		}
 		rows.sort(sortByValue);
 		processRows();

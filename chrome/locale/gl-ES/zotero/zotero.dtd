@@ -6,9 +6,11 @@
 <!ENTITY zotero.general.delete "Borrar">
 <!ENTITY zotero.general.ok "Aceptar">
 <!ENTITY zotero.general.cancel "Cancelar">
+<!ENTITY zotero.general.refresh "Actualizar">
+<!ENTITY zotero.general.saveAs "Gardar como...">
 
 <!ENTITY zotero.errorReport.title "Informe de erros de Zotero">
-<!ENTITY zotero.errorReport.unrelatedMessages "O rexistro de erros pode incluír mensaxes que non gardan relación con Zotero.">
+<!ENTITY zotero.errorReport.unrelatedMessages "Isto pode conter mensaxes que non estean relacionadas con Zotero.">
 <!ENTITY zotero.errorReport.submissionInProgress "Espere mentres que se presenta o informe de erro.">
 <!ENTITY zotero.errorReport.submitted "Presentouse o informe de erro .">
 <!ENTITY zotero.errorReport.reportID "ID do informe:">
@@ -45,7 +47,7 @@
 <!ENTITY zotero.collections.showUnfiledItems "Mostrar os elementos sen cubrir">
 
 <!ENTITY zotero.items.itemType "Tipo de elemento">
-<!ENTITY zotero.items.type_column "Item Type">
+<!ENTITY zotero.items.type_column "Tipo de elemento">
 <!ENTITY zotero.items.title_column "Título">
 <!ENTITY zotero.items.creator_column "Creador">
 <!ENTITY zotero.items.date_column "Data">
@@ -97,7 +99,7 @@
 <!ENTITY zotero.toolbar.moreItemTypes.label "Máis">
 <!ENTITY zotero.toolbar.newItemFromPage.label "Crear un novo elemento a partir da páxina actual">
 <!ENTITY zotero.toolbar.lookup.label "Engadir un elemento polo identificador">
-<!ENTITY zotero.toolbar.removeItem.label "Eliminar o elemento...">
+<!ENTITY zotero.toolbar.removeItem.label "Eliminar...">
 <!ENTITY zotero.toolbar.newCollection.label "Colección nova">
 <!ENTITY zotero.toolbar.newGroup "Grupo novo...">
 <!ENTITY zotero.toolbar.newSubcollection.label "Subcolección nova">
@@ -123,7 +125,9 @@
 <!ENTITY zotero.item.textTransform "Transformar o texto">
 <!ENTITY zotero.item.textTransform.titlecase "Maiúsculas comezando cada palabra">
 <!ENTITY zotero.item.textTransform.sentencecase "Maiúsculas comezando cada oración">
-<!ENTITY zotero.item.creatorTransform.nameSwap "Cambiar nome/apelidos">
+<!ENTITY zotero.item.creatorTransform.nameSwap "Intercambiar Nome/Apelidos">
+<!ENTITY zotero.item.viewOnline "Ver en liña">
+<!ENTITY zotero.item.copyAsURL "Gardar como URL">
 
 <!ENTITY zotero.toolbar.newNote "Nota nova">
 <!ENTITY zotero.toolbar.note.standalone "Nova nota independente">
@@ -161,6 +165,7 @@
 
 <!ENTITY zotero.bibliography.title "Crear a bibliografía">
 <!ENTITY zotero.bibliography.style.label "Estilo de cita:">
+<!ENTITY zotero.bibliography.locale.label "Lingua:">
 <!ENTITY zotero.bibliography.outputMode "Modo de saída:">
 <!ENTITY zotero.bibliography.bibliography "Bibliografía:">
 <!ENTITY zotero.bibliography.outputMethod "Método de saída:">
@@ -185,9 +190,6 @@
 
 <!ENTITY zotero.citation.keepSorted.label "Manter as fontes ordenadas">
 
-<!ENTITY zotero.citation.page "Páxina">
-<!ENTITY zotero.citation.paragraph "Parágrafo">
-<!ENTITY zotero.citation.line "Liña">
 <!ENTITY zotero.citation.suppressAuthor.label "Eliminar o autor">
 <!ENTITY zotero.citation.prefix.label "Prefixo:">
 <!ENTITY zotero.citation.suffix.label "Sufixo:">
@@ -284,3 +286,7 @@
 <!ENTITY zotero.downloadManager.label "Gardar en Zotero">
 <!ENTITY zotero.downloadManager.saveToLibrary.description "Os anexos non se poden gardar na librería que se escolleu. En vez de alí, ese documento gardarase na súa biblioteca.">
 <!ENTITY zotero.downloadManager.noPDFTools.description "Para empregar esta característica ten que instalar primeiro as ferramentas de PDF dende as preferencias de Zotero.">
+
+<!ENTITY zotero.attachLink.title "Engadirlle unha ligazón á URI:">
+<!ENTITY zotero.attachLink.label.link "Ligazón:">
+<!ENTITY zotero.attachLink.label.title "Título:">

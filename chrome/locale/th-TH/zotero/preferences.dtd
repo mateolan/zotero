@@ -12,8 +12,6 @@
 <!ENTITY zotero.preferences.showIn.browserPane "ช่องเบราเซอร์">
 <!ENTITY zotero.preferences.showIn.separateTab "แยกแท็บ">
 <!ENTITY zotero.preferences.showIn.appTab "แท็บโปรแกรม">
-<!ENTITY zotero.preferences.statusBarIcon "ไอคอนแถบสถานะ:">
-<!ENTITY zotero.preferences.statusBarIcon.none "ไม่มี">
 <!ENTITY zotero.preferences.fontSize "ขนาดตัวอักษร:">
 <!ENTITY zotero.preferences.fontSize.small "เล็ก">
 <!ENTITY zotero.preferences.fontSize.medium "กลาง">
@@ -109,6 +107,7 @@
 <!ENTITY zotero.preferences.quickCopy.siteEditor.domainPath "โดเมน/พาธ">
 <!ENTITY zotero.preferences.quickCopy.siteEditor.domainPath.example "(เช่น wikipedia.org)">
 <!ENTITY zotero.preferences.quickCopy.siteEditor.outputFormat "รูปแบบส่งออก">
+<!ENTITY zotero.preferences.quickCopy.siteEditor.locale "Language">
 <!ENTITY zotero.preferences.quickCopy.dragLimit "ไม่ใช้การสำเนาแบบเร็วเมื่อลากรายการมากกว่า ">
 
 <!ENTITY zotero.preferences.prefpane.cite "อ้างอิง">
@@ -124,8 +123,6 @@
 <!ENTITY zotero.preferences.cite.styles.styleManager.updated "ปรับเป็นรุ่นปัจจุบันแล้ว">
 <!ENTITY zotero.preferences.cite.styles.styleManager.csl "CSL">
 <!ENTITY zotero.preferences.export.getAdditionalStyles "รับรูปแบบเพิ่มเติม...">
-
-<!ENTITY zotero.preferences.prefpane.keys "คีย์ลัด">
 
 <!ENTITY zotero.preferences.keys.openZotero "เปิด/ปิดแผง Zotero">
 <!ENTITY zotero.preferences.keys.saveToZotero "Save to Zotero (address bar icon)">
@@ -148,6 +145,7 @@
 <!ENTITY zotero.preferences.proxies.desc_after_link "สำหรับข้อมูลเพิ่มเติม">
 <!ENTITY zotero.preferences.proxies.transparent "เปิดการเปลี่ยนทิศทางพร็อกซี่">
 <!ENTITY zotero.preferences.proxies.autoRecognize "จดจำพร็อกซี่โดยอัตโนมัติ">
+<!ENTITY zotero.preferences.proxies.showRedirectNotification "Show notification when redirecting through a proxy">
 <!ENTITY zotero.preferences.proxies.disableByDomain "เลิกใช้การเปลี่ยนทิศทางพร็อกซี่เมื่อชื่อโดเมนมีคำว่า">
 <!ENTITY zotero.preferences.proxies.configured "ติดตั้งค่าพร็อกซี่">
 <!ENTITY zotero.preferences.proxies.hostname "ชื่อแม่ข่าย">
@@ -164,6 +162,7 @@
 
 <!ENTITY zotero.preferences.prefpane.advanced "ขั้นสูง">
 <!ENTITY zotero.preferences.advanced.filesAndFolders "แฟ้มและโฟลเดอร์">
+<!ENTITY zotero.preferences.advanced.keys "Shortcuts">
 
 <!ENTITY zotero.preferences.prefpane.locate "หาที่ตั้ง">
 <!ENTITY zotero.preferences.locate.locateEngineManager "ตัวจัดการเครื่องมือค้นหาบทความ">
@@ -204,6 +203,6 @@
 <!ENTITY zotero.preferences.debugOutputLogging.submitToServer "ส่งไปเครื่องบริการของ Zotero">
 
 <!ENTITY zotero.preferences.openAboutConfig "เปิด about:config">
-<!ENTITY zotero.preferences.openCSLEdit "เปิดตัวจัดการ CSL">
-<!ENTITY zotero.preferences.openCSLPreview "เปิดดูตัวอย่าง CSL">
+<!ENTITY zotero.preferences.openCSLEdit "Open Style Editor">
+<!ENTITY zotero.preferences.openCSLPreview "Open Style Preview">
 <!ENTITY zotero.preferences.openAboutMemory "เปิด about:memory">

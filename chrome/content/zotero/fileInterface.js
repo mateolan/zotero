@@ -76,6 +76,10 @@ Zotero_File_Exporter.prototype.save = function() {
 			translation.setCollection(this.collection);
 		} else if(this.items) {
 			translation.setItems(this.items);
+		} else if(this.libraryID === undefined) {
+			throw new Error('No export configured');
+		} else {
+			translation.setLibraryID(this.libraryID);
 		}
 		
 		translation.setLocation(fp.file);
@@ -129,7 +133,11 @@ var Zotero_File_Interface = new function() {
 	 */
 	function exportFile() {
 		var exporter = new Zotero_File_Exporter();
-		exporter.name = Zotero.getString("pane.collections.library");
+		exporter.libraryID = ZoteroPane_Local.getSelectedLibraryID();
+		if (exporter.libraryID === false) {
+			throw new Error('No library selected');
+		}
+		exporter.name = Zotero.Libraries.getName(exporter.libraryID);
 		exporter.save();
 	}
 	
@@ -320,7 +328,7 @@ var Zotero_File_Interface = new function() {
 			translation.setHandler("done", function(obj, worked) {
 				// add items to import collection
 				if(importCollection) {
-					importCollection.addItems([item.id for each(item in obj.newItems)]);
+					importCollection.addItems(obj.newItems.map(item => item.id));
 				}
 				
 				Zotero.DB.commitTransaction();
@@ -412,16 +420,17 @@ var Zotero_File_Interface = new function() {
 	 *
 	 * Does not check that items are actual references (and not notes or attachments)
 	 */
-	function copyItemsToClipboard(items, style, asHTML, asCitations) {
+	function copyItemsToClipboard(items, style, locale, asHTML, asCitations) {
 		// copy to clipboard
 		var transferable = Components.classes["@mozilla.org/widget/transferable;1"].
 						   createInstance(Components.interfaces.nsITransferable);
 		var clipboardService = Components.classes["@mozilla.org/widget/clipboard;1"].
 							   getService(Components.interfaces.nsIClipboard);
 		var style = Zotero.Styles.get(style);
-		
+		var cslEngine = style.getCiteProc(locale);
+	
 		// add HTML
-		var bibliography = Zotero.Cite.makeFormattedBibliographyOrCitationList(style, items, "html", asCitations);
+ 		var bibliography = Zotero.Cite.makeFormattedBibliographyOrCitationList(cslEngine, items, "html", asCitations);
 		var str = Components.classes["@mozilla.org/supports-string;1"].
 				  createInstance(Components.interfaces.nsISupportsString);
 		str.data = bibliography;
@@ -430,7 +439,8 @@ var Zotero_File_Interface = new function() {
 		
 		// add text (or HTML source)
 		if(!asHTML) {
-			var bibliography = Zotero.Cite.makeFormattedBibliographyOrCitationList(style, items, "text", asCitations);
+			cslEngine = style.getCiteProc(locale);
+			var bibliography = Zotero.Cite.makeFormattedBibliographyOrCitationList(cslEngine, items, "text", asCitations);
 		}
 		var str = Components.classes["@mozilla.org/supports-string;1"].
 				  createInstance(Components.interfaces.nsISupportsString);
@@ -449,15 +459,18 @@ var Zotero_File_Interface = new function() {
 	 *
 	 * if |asHTML| is true, copy HTML source as text
 	 */
-	function copyCitationToClipboard(items, style, asHTML) {
+	function copyCitationToClipboard(items, style, locale, asHTML) {
 		// copy to clipboard
 		var transferable = Components.classes["@mozilla.org/widget/transferable;1"].
 						   createInstance(Components.interfaces.nsITransferable);
 		var clipboardService = Components.classes["@mozilla.org/widget/clipboard;1"].
 							   getService(Components.interfaces.nsIClipboard);
 		
-		var style = Zotero.Styles.get(style).getCiteProc();
-		var citation = {"citationItems":[{id:item.id} for each(item in items)], properties:{}};
+		var style = Zotero.Styles.get(style).getCiteProc(locale);
+		var citation = {
+			citationItems: items.map(item => ({ id: item.id })),
+			properties: {}
+		};
 		
 		// add HTML
 		var bibliography = style.previewCitationCluster(citation, [], [], "html");
@@ -509,14 +522,18 @@ var Zotero_File_Interface = new function() {
 			format = "rtf";
 		}
 		
+		// determine locale preference
+		var locale = io.locale;
+		
 		// generate bibliography
 		try {
 			if(io.method == 'copy-to-clipboard') {
-				copyItemsToClipboard(items, io.style, false, io.mode === "citations");
+				Zotero_File_Interface.copyItemsToClipboard(items, io.style, locale, false, io.mode === "citations");
 			}
 			else {
 				var style = Zotero.Styles.get(io.style);
-				var bibliography = Zotero.Cite.makeFormattedBibliographyOrCitationList(style,
+				var cslEngine = style.getCiteProc(locale);
+				var bibliography = Zotero.Cite.makeFormattedBibliographyOrCitationList(cslEngine,
 					items, format, io.mode === "citations");
 			}
 		} catch(e) {
